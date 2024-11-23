@@ -7,8 +7,8 @@ class RegisterQuestCmd(Command):
         self.questId = questId
     
     def execute(self, bot: Bot):
-        if self.questId not in bot.registered_auto_quest:
-            bot.registered_auto_quest.append(self.questId)
+        if self.questId not in bot.registered_auto_quest_ids:
+            bot.registered_auto_quest_ids.append(self.questId)
             bot.accept_quest(self.questId)
         
     def to_string(self):

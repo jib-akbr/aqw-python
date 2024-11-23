@@ -17,3 +17,5 @@ from .inv_to_bank_cmd import InvToBankCmd
 from .bank_to_inv_cmd import BankToInvCmd
 from .register_quest import RegisterQuestCmd
 from .message_cmd import MessageCmd
+from .label_cmd import LabelCmd
+from .to_label_cmd import ToLabelCmd

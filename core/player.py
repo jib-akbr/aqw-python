@@ -100,6 +100,18 @@ class Player:
                 return item
         return None
     
+    def get_item_inventory(self, itemId):
+        for item in self.INVENTORY:
+            if str(item['ItemID']) == str(itemId):
+                return item
+        return None
+    
+    def get_item_temp_inventory(self, itemId):
+        for item in self.TEMPINVENTORY:
+            if str(item['ItemID']) == str(itemId):
+                return item
+        return None
+    
     def get_item_bank(self, itemName: str):
         for item in self.BANK:
             if item['sName'].lower() == itemName.lower():
