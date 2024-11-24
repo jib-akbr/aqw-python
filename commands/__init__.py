@@ -19,3 +19,5 @@ from .register_quest import RegisterQuestCmd
 from .message_cmd import MessageCmd
 from .label_cmd import LabelCmd
 from .to_label_cmd import ToLabelCmd
+from .buy_item_cmd import BuyItemCmd
+from .sell_item_cmd import SellItemCmd

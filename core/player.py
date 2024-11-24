@@ -119,14 +119,14 @@ class Player:
         return None
 
     def isInBank(self, itemName: str, qty: int = 1, operator: str = ">=") -> bool:
-        for item in self.BANK:
+        inv = self.BANK
+        invItemQty = 0
+        for item in inv:
             if item["sName"].lower() == itemName.lower():
-                if checkOperator(item["iQty"], qty, operator):
-                    self.BANK_CHAR_ITEM_ID = int(item["CharItemID"])
-                    self.BANK_ITEM_ID = int(item["ItemID"])
-                    self.BANK_ITEM_NAME = itemName
-                    return True
-        return False
+                invItemQty = item["iQty"]
+                break
+        print(f"actual: {itemName} [{invItemQty}]")
+        return checkOperator(invItemQty, qty, operator)
     
     def isInInventory(self, itemName: str, qty: int = 1, operator: str = ">=", isTemp: bool = False) -> bool:
         inv = self.INVENTORY

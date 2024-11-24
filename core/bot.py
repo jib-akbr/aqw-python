@@ -11,6 +11,7 @@ import threading
 import inspect
 import asyncio
 from abc import ABC, abstractmethod
+from model import Shop
 
 class Bot:
     charLoadComplete= False
@@ -28,8 +29,8 @@ class Bot:
     is_client_connected = False
     serverInfo = None
     client_socket = None
-    loaded_quest_ids = []
     loaded_quest_datas = []
+    loaded_shop_datas = []
     registered_auto_quest_ids = []
     items_drop_whitelist = []
     commands_thread = threading.Event()
@@ -160,6 +161,7 @@ class Bot:
             except:
                 return
             cmd = data["cmd"]
+            # print(f"cmd: {cmd}")
             if cmd == "moveToArea":
                 self.monmap = data.get("monmap")
                 self.mondef = data.get("mondef")
@@ -216,7 +218,6 @@ class Bot:
                         pass
                 if m:
                     pass
-                
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
                 self.player.SKILLS[5]["cd"] = data["o"]["cd"]
@@ -229,9 +230,37 @@ class Bot:
                     self.doSleep(11000)
             elif cmd == "getQuests":
                 for quest_id, quest_data in data.get("quests").items():
-                    self.loaded_quest_datas.append({
-                        quest_id: quest_data
-                    })
+                    self.loaded_quest_datas.append(quest_data)
+            elif cmd == "loadShop":
+                self.loaded_shop_datas.append(Shop(data["shopinfo"]))
+            elif cmd == "buyItem":
+                if data["bitSuccess"] == 1:
+                    for loaded_shop in self.loaded_shop_datas:
+                        for shop_item in loaded_shop.items:
+                            if str(shop_item.item_id) ==  str(data["ItemID"]):
+                                bought = {
+                                    "sName": shop_item.item_name,
+                                    "ItemID": data["ItemID"],
+                                    "CharItemID": data["CharItemID"],
+                                    "iQty": data["iQty"]
+                                }
+                                is_added_to_invent = False
+                                for player_item in self.player.INVENTORY:
+                                    if str(player_item["ItemID"]) == str(bought["ItemID"]):
+                                        player_item["iQty"] += bought["iQty"]
+                                        is_added_to_invent = True
+                                        break
+                                if not is_added_to_invent:
+                                    self.player.INVENTORY.append(bought)
+                                break
+            elif cmd == "sellItem":
+                for item in self.player.INVENTORY:
+                    if int(item["CharItemID"]) == int(data["CharItemID"]):
+                        if data["iQtyNow"] == 0:
+                            del item
+                        else:
+                            item["iQty"] = data["iQtyNow"]
+                        break
             elif cmd == "addGoldExp":
                 self.player.GOLD += data["intGold"]
                 self.player.GOLDFARMED += data["intGold"]
@@ -269,6 +298,7 @@ class Bot:
                                 if str(playerItem["ItemID"]) == itemId:
                                     playerItem["iQty"] = dropItem["iQtyNow"]
                                     playerItem["CharItemID"] = dropItem["CharItemID"]
+                                    await self.check_registered_quest_completion(itemId)
                                     break
                         else:
                             self.player.INVENTORY.append(dropItem)
@@ -308,11 +338,11 @@ class Bot:
                 quest_id = data.get('QuestID', None)
                 s_name = data.get('sName', None)
                 faction_id = data.get('rewardObj', {}).get('FactionID', None)
-                i_rep = data.get('rewardObj', {}).get('iRep', None)
+                i_rep = data.get('rewardObj', {}).get('iRep', 0)
                 is_success = data.get('bSuccess', 0)
                 ccqr_msg = data.get('msg', '')
                 if is_success == 1:
-                    print(Fore.YELLOW + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name}" + Fore.WHITE)
+                    print(Fore.YELLOW + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} - {i_rep} rep" + Fore.WHITE)
                 else:
                     print(Fore.RED + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} | {ccqr_msg}" + Fore.WHITE)
             elif cmd == "Wheel":
@@ -388,29 +418,29 @@ class Bot:
             for loaded_quest in self.loaded_quest_datas:
                 # Get quest detail of registered quest from loaded quest data
                 str_quest_id = str(registered_quest_id)
-                if loaded_quest.get(str_quest_id):
-                    if loaded_quest.get(str_quest_id)["QuestID"]  == registered_quest_id:
-                        # Checking all required items for the quest is in the player's inventory
-                        all_req_items_completed = False
-                        for req_item in loaded_quest.get(str_quest_id)["turnin"]:
-                            if str(req_item["ItemID"]) == str(item_id):
-                                invent_item = (
-                                    self.player.get_item_temp_inventory(itemId=item_id) 
-                                    if is_temp 
-                                    else self.player.get_item_inventory(itemId=item_id)
-                                )
-                                if invent_item:
-                                    if int(invent_item["iQty"]) >= int(req_item["iQty"]):
-                                        all_req_items_completed = True
-                                    else:
-                                        all_req_items_completed = False
-                        # Complete the quest if all required items are in the player's inventory
-                        if all_req_items_completed:   
-                            self.turn_in_quest(registered_quest_id)
-                            time.sleep(1)
-                            self.accept_quest(registered_quest_id)
-                            time.sleep(1)
-                        break
+                if loaded_quest.get("QuestID", 0)  == registered_quest_id:
+                    # Checking all required items for the quest is in the player's inventory
+                    all_req_items_completed = False
+                    for req_item in loaded_quest["turnin"]:
+                        if str(req_item["ItemID"]) == str(item_id):
+                            invent_item = (
+                                self.player.get_item_temp_inventory(itemId=item_id) 
+                                if is_temp 
+                                else self.player.get_item_inventory(itemId=item_id)
+                            )
+                            if invent_item:
+                                print(f"{invent_item["sName"]}: {invent_item["iQty"]}/{req_item["iQty"]}")
+                                if int(invent_item["iQty"]) >= int(req_item["iQty"]):
+                                    all_req_items_completed = True
+                                else:
+                                    all_req_items_completed = False
+                    # Complete the quest if all required items are in the player's inventory
+                    if all_req_items_completed:   
+                        self.turn_in_quest(registered_quest_id)
+                        time.sleep(1)
+                        self.accept_quest(registered_quest_id)
+                        time.sleep(1)
+                    break
 
     def read_batch(self, conn):
         message_builder = ""
@@ -471,18 +501,16 @@ class Bot:
         self.write_message(packet)
     
     def accept_quest(self, quest_id: int):
-        if not quest_id in self.loaded_quest_ids:
+        loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
+        if not str(quest_id) in str(loaded_quest_ids):
             self.write_message(f"%xt%zm%getQuests%{self.areaId}%{quest_id}%")
-            self.loaded_quest_ids.append(quest_id)
             self.doSleep(500)
         self.write_message(f"%xt%zm%acceptQuest%{self.areaId}%{quest_id}%")
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] try accepting... {quest_id}")
         self.doSleep(500)
         
-    def turn_in_quest(self, quest_id: int):
-        packet = f"%xt%zm%tryQuestComplete%{self.areaId}%{quest_id}%-1%false%1%wvz%"
+    def turn_in_quest(self, quest_id: int, item_id: int = -1):
+        packet = f"%xt%zm%tryQuestComplete%{self.areaId}%{quest_id}%{item_id}%false%1%wvz%"
         self.write_message(packet)
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] try completing... {quest_id}")
         self.doSleep(500)
 
     def use_scroll(self, monsterid, max_target, scroll_id):
