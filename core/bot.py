@@ -19,6 +19,7 @@ class Bot:
     cmds = []
     index = 0
     monmap = []
+    areaId = None
     canuseskill = True
     sleep = False
     skillNumber = 0
@@ -59,9 +60,10 @@ class Bot:
         
     def start_bot(self):
         self.login(self.username, self.password, self.server)
-        asyncio.run(self.connect_client())
-        # self.run_registered_quests()        
-        asyncio.run(self.run_commands())
+        if self.serverInfo:
+            asyncio.run(self.connect_client())
+            # self.run_registered_quests()        
+            asyncio.run(self.run_commands())
     
     def stop_bot(self):
         self.is_client_connected = False
@@ -78,8 +80,8 @@ class Bot:
 
     def login(self, username, password, server):
         self.player = Player(username, password)
-        self.player.getInfo()
-        self.serverInfo = self.player.getServerInfo(server)
+        if self.player.getInfo():
+            self.serverInfo = self.player.getServerInfo(server)
         
     async def connect_client(self):
         hostname = self.serverInfo[0] 
@@ -145,6 +147,11 @@ class Bot:
         command.execute(self)
         self.doSleep(self.cmdDelay)
         return
+    
+    def check_user_access_level(self, username, access_level):
+        if access_level >= 30:
+            print(Fore.RED + f"You met a {username}, a staff!")
+            self.stop_bot()
 
     async def handle_server_response(self, msg):
         if "slow down" in msg:
@@ -179,13 +186,22 @@ class Bot:
             elif cmd == "initUserDatas":
                 try:
                     for i in data["a"]:
-                        self.player.CHARID = i["data"]["CharID"]
-                        self.player.GOLD = int(i["data"]["intGold"])
-                    retrieveInventory = f"%xt%zm%retrieveInventory%{self.areaId}%{self.username_id}%"
-                    self.player.loadBank()
-                    self.write_message(retrieveInventory)
+                        username = i["data"]["strUsername"]
+                        access_level = int(i["data"]["intAccessLevel"])
+                        if username.lower() == self.username.lower() and self.player.CHARID == 0:
+                            self.player.CHARID = i["data"]["CharID"]
+                            self.player.GOLD = int(i["data"]["intGold"])
+                        self.check_user_access_level(username, access_level)
+                    if not self.player.BANK:
+                        print("Load bank and inventory...")
+                        self.player.loadBank()
+                        self.write_message(f"%xt%zm%retrieveInventory%{self.areaId}%{self.username_id}%")
                 except Exception as e:
-                    print(f"An error occurred: {e}")
+                    print(f"initUserDatas err: {e}")
+            elif cmd == "initUserData":
+                username = data["data"]["strUsername"]
+                access_level = int(data["data"]["intAccessLevel"])
+                self.check_user_access_level(username, access_level)
             elif cmd == "loadInventoryBig":
                 self.charLoadComplete = True
                 self.player.INVENTORY = data["items"]
@@ -349,7 +365,6 @@ class Bot:
                 dropItems = data.get('dropItems')
                 dropItemsName = [item["sName"] for item in dropItems.values() if "sName" in item]
                 print(Fore.YELLOW + f"Wheel: {dropItemsName}" + Fore.WHITE)
-                
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
@@ -372,14 +387,8 @@ class Bot:
                 self.write_message(f"%xt%zm%firstJoin%1%")
                 self.write_message(f"%xt%zm%cmd%1%ignoreList%$clearAll%")
             elif "You joined" in msg:
-                if msg.split('"')[1].split("-")[0] == "battleon":
-                    if self.charLoadComplete is False:
-                        msg = f"%xt%zm%retrieveUserDatas%{self.areaId}%{self.username_id}%"
-                        self.write_message(msg)
-                        self.is_joining_map = False
-                else:
-                    self.is_joining_map = False
-                    self.jump_cell("Enter", "Spawn")
+                self.write_message(f"%xt%zm%retrieveUserDatas%{self.areaId}%{self.username_id}%")
+                self.is_joining_map = False
             elif "respawnMon" in msg:
                 pass
             elif "chatm" in msg:
@@ -474,6 +483,7 @@ class Bot:
         return complete_messages
     
     def write_message(self, message):
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
         if self.client_socket is None:
             return "Error: Connection is not established"
         try:

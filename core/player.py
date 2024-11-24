@@ -1,6 +1,8 @@
 import requests
 from datetime import datetime, timedelta
 from .utils import checkOperator
+from colorama import Fore
+import json
 
 class Player:
     USER = ""
@@ -42,10 +44,16 @@ class Player:
         print(f'Login {self.USER}...')
         response = requests.post(url, json=data)
         response_json = response.json()
-        self.SERVERS = response_json["servers"]
-        self.TOKEN = response_json["login"]["sToken"]
-        self.LOGINUSERID = response_json["login"]["userid"]
-        return response_json
+        # print(json.dumps(response_json))
+        if response_json.get("login", None):
+            self.SERVERS = response_json["servers"]
+            self.TOKEN = response_json["login"]["sToken"]
+            self.LOGINUSERID = response_json["login"]["userid"]
+            return response
+        if response_json.get("bSuccess", 0) == 0:
+            print(f"Login {self.USER} failed... {Fore.RED + response_json['sMsg'] + Fore.RESET}")
+            return None
+        return None
 
     def loadBank(self):
         url = "https://game.aq.com/game/api/char/bank?v=0.35129284486174583"
