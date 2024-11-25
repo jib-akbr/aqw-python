@@ -12,6 +12,7 @@ import inspect
 import asyncio
 from abc import ABC, abstractmethod
 from model import Shop
+from model import Monster
 
 class Bot:
     charLoadComplete= False
@@ -148,7 +149,7 @@ class Bot:
         self.doSleep(self.cmdDelay)
         return
     
-    def check_user_access_level(self, username, access_level):
+    def check_user_access_level(self, username: str, access_level: int):
         if access_level >= 30:
             print(Fore.RED + f"You met a {username}, a staff!")
             self.stop_bot()
@@ -170,19 +171,24 @@ class Bot:
             cmd = data["cmd"]
             # print(f"cmd: {cmd}")
             if cmd == "moveToArea":
-                self.monmap = data.get("monmap")
-                self.mondef = data.get("mondef")
+                mon_branch = data.get("monBranch")
+                mon_def = data.get("mondef")
+                mon_map = data.get("monmap")
                 self.areaName = data["areaName"]
                 self.areaId = data["areaId"]
                 self.strMapName = data["strMapName"]
                 self.monsters = []
-                if self.mondef != None and self.monmap != None:
-                    for iMonMap in self.monmap:
-                        for iMonDef in self.mondef:
-                            if iMonMap["MonID"] == iMonDef["MonID"]:
-                                mon = iMonMap
-                                mon["name"] = iMonDef["strMonName"]
-                                self.monsters.append(mon)
+                if mon_def and mon_branch and mon_map:
+                    for i_mon_branch in mon_branch:
+                        self.monsters.append(Monster(i_mon_branch))
+                    for i_mon_def in mon_def:
+                        for mon in self.monsters:
+                            if i_mon_def["MonID"] == mon.mon_id:
+                                mon.mon_name = i_mon_def["strMonName"]
+                    for i_mon_map in mon_map:
+                        for mon in self.monsters:
+                            if i_mon_map["MonMapID"] == mon.mon_map_id:
+                                mon.frame = i_mon_map["strFrame"]
             elif cmd == "initUserDatas":
                 try:
                     for i in data["a"]:
@@ -212,6 +218,13 @@ class Bot:
                             self.player.EQUIPPED[item["sType"]] = item
                         elif item["sES"] == "Weapon":
                             self.player.EQUIPPED["Weapon"] = item
+            # Monster respawned
+            elif cmd =="mtls":
+                for mon in self.monsters:
+                    if mon.mon_map_id == str(data["id"]):
+                        mon.is_alive = int(data["o"]["intState"]) > 0
+                        mon.current_hp = int(data["o"]["intHP"])
+                        break
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
             elif cmd == "stu":
@@ -222,7 +235,6 @@ class Bot:
                 a = data.get("a")
                 m = data.get("m")
                 p = data.get("p")
-                
                 if anims:
                     if self.username_id in anims[0]["cInf"]:
                         animsStr = anims[0].get("animStr")
@@ -232,8 +244,21 @@ class Bot:
                     msg = anims[0].get("msg")
                     if msg:
                         pass
+                if p:
+                    player = p.get(self.username)
+                    hp = player.get("intHP") if player else None
+                    if hp:
+                        self.player.CURRENT_HP = hp
                 if m:
-                    pass
+                    for mon_map_id, mon_condition in m.items():
+                        for mon in self.monsters:
+                            if mon.mon_map_id == mon_map_id:
+                                try:
+                                    mon.is_alive = int(mon_condition["intState"]) > 0
+                                    mon.current_hp = int(mon_condition["intHP"])
+                                except:
+                                    pass
+                                break
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
                 self.player.SKILLS[5]["cd"] = data["o"]["cd"]
@@ -532,14 +557,45 @@ class Bot:
         self.write_message(f"%xt%zm%gar%1%0%i1>p:{self.user_id}%{potion_id}%wvz%")
 
     def use_skill_to_monster(self, skill, monsterid, max_target):
+        if not self.check_is_skill_safe(skill):
+            return
         self.target = [f"a{skill}>m:{i}" for i in monsterid][:max_target]
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
     def use_skill_to_player(self, skill, max_target):
+        if not self.check_is_skill_safe(skill):
+            return
         self.target = [f"a{skill}>p:{i}" for i in self.user_ids][:max_target]
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
+        
+    def check_is_skill_safe(self, skill: int):
+        conditions = {
+            "Void Highlord": {
+                "hp_threshold": 2000,
+                "skills_to_check": [1, 3],
+                "condition": lambda hp, threshold: hp < threshold
+            },
+            "Scarlet Sorceress": {
+                "hp_threshold": 1500,
+                "skills_to_check": [1, 4],
+                "condition": lambda hp, threshold: hp < threshold
+            },
+            "ArchPaladin": {
+                "hp_threshold": 2000,
+                "skills_to_check": [3],
+                "condition": lambda hp, threshold: hp > threshold
+            }
+        }
+        # Get the class and its conditions
+        equipped_class = str(self.player.EQUIPPED["Class"])
+        if equipped_class in conditions:
+            condition = conditions[equipped_class]
+            # Check if the current conditions match
+            if skill in condition["skills_to_check"] and condition["condition"](self.player.CURRENT_HP, condition["hp_threshold"]):
+                return False
+        return True
 
     def doSleep(self, sleepms):
         self.sleep = True

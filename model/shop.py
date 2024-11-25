@@ -3,10 +3,10 @@ class Shop:
         items = []
         for shop_item in json_data['items']:
             items.append(ShopItem(shop_item))
-        self.shop_id = json_data['ShopID']
-        self.shop_name = json_data['sName']
+        self.shop_id: str = str(json_data['ShopID'])
+        self.shop_name: str = json_data['sName']
         self.items = items
-        self.is_member = json_data['bUpgrd'] == "1"
+        self.is_member: bool = json_data['bUpgrd'] == "1"
         
     def get_item(self, item_name: str):
         for item in self.items:
@@ -16,8 +16,8 @@ class Shop:
 
 class ShopItem:
     def __init__(self, json_data):
-        self.item_id = json_data['ItemID']
-        self.shop_item_id = json_data['ShopItemID']
-        self.item_name = json_data['sName']
-        self.cost = json_data['iCost']
-        self.is_acs = json_data['bCoins'] == "1"
+        self.item_id: str = str(json_data['ItemID'])
+        self.shop_item_id: str = str(json_data['ShopItemID'])
+        self.item_name: str = json_data['sName']
+        self.cost: int = json_data['iCost']
+        self.is_acs: bool = str(json_data['bCoins']) == "1"

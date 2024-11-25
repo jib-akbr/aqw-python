@@ -24,6 +24,7 @@ class Player:
     GOLDFARMED = 0
     EXPFARMED = 0
     ISDEAD = False
+    CURRENT_HP = 9999
 
     listTypeEquip = ["Pet", "Cape", "Class", "Misc", "Armor", "Helm"]
     EQUIPPED = {}
