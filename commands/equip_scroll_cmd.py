@@ -2,19 +2,22 @@ from core.bot import Bot
 from abstracts.command import Command
 import time
 
-class SellItemCmd(Command):
+class EquipScrollCmd(Command):
     
-    def __init__(self, item_name: str, qty: int = 1):
+    #item_type: scroll, elixir, potion
+    def __init__(self, item_name: str, item_type: str = "scroll"):
         self.item_name = item_name
-        self.qty = qty = qty
+        self.item_type = item_type
     
     def execute(self, bot: Bot):
+        bot.ensure_leave_from_combat()
+            
         for item in bot.player.INVENTORY:
             if item["sName"].lower() == self.item_name.lower():
-                packet = f"%xt%zm%sellItem%{bot.areaId}%{item['ItemID']}%{self.qty}%{int(item['CharItemID'])}%"
+                packet = f"%xt%zm%geia%%{bot.areaId}%{self.item_type}%{item['sMeta']}%{item['ItemID']}%"
                 bot.write_message(packet)
                 time.sleep(0.5)
                 break
         
     def to_string(self):
-        return f"Sell : {self.item_name}"
+        return f"Equip scroll : {self.item_name}"

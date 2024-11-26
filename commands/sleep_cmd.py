@@ -8,7 +8,7 @@ class SleepCmd(Command):
         self.milliseconds = milliseconds
     
     def execute(self, bot: Bot):
-        bot.doSleep(self.milliseconds)
+        time.sleep(self.milliseconds/1000)
         
     def to_string(self):
         return f"Sleep {self.milliseconds}ms"

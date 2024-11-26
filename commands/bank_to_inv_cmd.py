@@ -1,5 +1,6 @@
 from core.bot import Bot
 from abstracts.command import Command
+import time
 
 class BankToInvCmd(Command):
     
@@ -24,7 +25,7 @@ class BankToInvCmd(Command):
                 if itemBank['sName'] == item['sName']:
                     del itemBank
                     break
-            bot.doSleep(1000)
+            time.sleep(1)
         
     def to_string(self):
         return f"Bank to inv : {self.itemName}"
