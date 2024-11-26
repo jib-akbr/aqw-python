@@ -170,7 +170,6 @@ class Bot:
             except:
                 return
             cmd = data["cmd"]
-            # print(f"cmd: {cmd}")
             if cmd == "moveToArea":
                 mon_branch = data.get("monBranch")
                 mon_def = data.get("mondef")
@@ -361,6 +360,7 @@ class Bot:
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
             elif cmd == "turnIn":
+                sItems = data.get("sItems").split(',')
                 for s_item in sItems:
                     itemId = s_item.split(':')[0]
                     iQty = int(s_item.split(':')[1])
