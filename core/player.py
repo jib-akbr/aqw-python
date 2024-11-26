@@ -96,29 +96,27 @@ class Player:
     def updateTime(self, skillNumber):
         skillDetail = self.SKILLS[skillNumber]
         self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) * (1 - self.CDREDUCTION))
-
-    def get_item_inventory(self, itemName: str):
-        for item in self.INVENTORY:
-            if item['sName'].lower() == itemName.lower():
-                return item
+    
+    def get_item_temp_inventory(self, itemName=None, itemId=None):
+        if itemName is not None:
+            for item in self.TEMPINVENTORY:
+                if item['sName'].lower() == itemName.lower():
+                    return item
+        elif itemId is not None:
+            for item in self.TEMPINVENTORY:
+                if str(item['ItemID']) == str(itemId):
+                    return item
         return None
     
-    def get_item_temp_inventory(self, itemName: str):
-        for item in self.TEMPINVENTORY:
-            if item['sName'].lower() == itemName.lower():
-                return item
-        return None
-    
-    def get_item_inventory(self, itemId):
-        for item in self.INVENTORY:
-            if str(item['ItemID']) == str(itemId):
-                return item
-        return None
-    
-    def get_item_temp_inventory(self, itemId):
-        for item in self.TEMPINVENTORY:
-            if str(item['ItemID']) == str(itemId):
-                return item
+    def get_item_inventory(self, itemName=None, itemId=None):
+        if itemName is not None:
+            for item in self.INVENTORY:
+                if item['sName'].lower() == itemName.lower():
+                    return item
+        elif itemId is not None:
+            for item in self.INVENTORY:
+                if str(item['ItemID']) == str(itemId):
+                    return item
         return None
     
     def get_item_bank(self, itemName: str):

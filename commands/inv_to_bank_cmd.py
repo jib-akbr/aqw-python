@@ -7,7 +7,7 @@ class InvToBankCmd(Command):
         self.itemName = itemName
     
     def execute(self, bot: Bot):
-        item = bot.player.get_item_inventory(self.itemName)        
+        item = bot.player.get_item_inventory(itemName=self.itemName)        
         if item:
             packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item['ItemID']}%{int(item['CharItemID'])}%"
             bot.write_message(packet)
