@@ -169,7 +169,6 @@ class Bot:
             except:
                 return
             cmd = data["cmd"]
-            # print(f"cmd: {cmd}")
             if cmd == "moveToArea":
                 mon_branch = data.get("monBranch")
                 mon_def = data.get("mondef")
@@ -224,7 +223,7 @@ class Bot:
                 for mon in self.monsters:
                     if mon.mon_map_id == str(data["id"]):
                         mon.is_alive = int(data["o"]["intState"]) > 0
-                        mon.current_hp = int(data["o"]["intHP"])
+                        mon.current_hp = int(data["o"].get("intHP", 0))
                         break
             elif cmd == "uotls":
                 if str(data['unm']) == str(self.player.USER):
@@ -358,6 +357,7 @@ class Bot:
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
             elif cmd == "turnIn":
+                sItems = data.get("sItems").split(',')
                 for s_item in sItems:
                     itemId = s_item.split(':')[0]
                     iQty = int(s_item.split(':')[1])
