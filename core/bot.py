@@ -169,7 +169,6 @@ class Bot:
             except:
                 return
             cmd = data["cmd"]
-            # print(f"cmd: {cmd}")
             if cmd == "moveToArea":
                 mon_branch = data.get("monBranch")
                 mon_def = data.get("mondef")
@@ -223,7 +222,7 @@ class Bot:
                 for mon in self.monsters:
                     if mon.mon_map_id == str(data["id"]):
                         mon.is_alive = int(data["o"]["intState"]) > 0
-                        mon.current_hp = int(data["o"]["intHP"])
+                        mon.current_hp = int(data["o"].get("intHP", 0))
                         break
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
@@ -354,21 +353,23 @@ class Bot:
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
             elif cmd == "turnIn":
-                sItems = data.get("sItems").split(':')
-                itemId = sItems[0]
-                iQty = int(sItems[1])
-                for i, item in enumerate(self.player.TEMPINVENTORY):
-                    if str(item["ItemID"]) == itemId:
-                        if item["iQty"] - iQty == 0:
-                            del self.player.TEMPINVENTORY[i]
-                        else:
-                            item["iQty"] -= iQty
-                for i, item in enumerate(self.player.INVENTORY):
-                    if str(item["ItemID"]) == itemId:
-                        if item["iQty"] - iQty == 0:
-                            del self.player.INVENTORY[i]
-                        else:
-                            item["iQty"] -= iQty
+                sItems = data.get("sItems").split(',')
+                for sItem in sItems:
+                    sItem = sItem.split(":")
+                    itemId = sItem[0]
+                    iQty = int(sItem[1])
+                    for i, item in enumerate(self.player.TEMPINVENTORY):
+                        if str(item["ItemID"]) == itemId:
+                            if item["iQty"] - iQty == 0:
+                                del self.player.TEMPINVENTORY[i]
+                            else:
+                                item["iQty"] -= iQty
+                    for i, item in enumerate(self.player.INVENTORY):
+                        if str(item["ItemID"]) == itemId:
+                            if item["iQty"] - iQty == 0:
+                                del self.player.INVENTORY[i]
+                            else:
+                                item["iQty"] -= iQty
             elif cmd == "event":
                 print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
                 if data["args"]["zoneSet"]  == "A":
