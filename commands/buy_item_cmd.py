@@ -9,7 +9,9 @@ class BuyItemCmd(Command):
         self.shop_id = shop_id
         self.qty = qty
     
-    def execute(self, bot: Bot):            
+    def execute(self, bot: Bot):  
+        bot.ensure_leave_from_combat()
+                  
         shop = None
         for loaded_shop in bot.loaded_shop_datas:
             if str(loaded_shop.shop_id) == str(self.shop_id):
@@ -20,12 +22,12 @@ class BuyItemCmd(Command):
                 if shop_item.item_name == self.item_name:
                     packet = f"%xt%zm%buyItem%{bot.areaId}%{shop_item.item_id}%{shop.shop_id}%{shop_item.shop_item_id}%{self.qty}%"
                     bot.write_message(packet)
-                    bot.doSleep(500)
+                    time.sleep(0.5)
                     break
         else:
             packet = f"%xt%zm%loadShop%{bot.areaId}%{self.shop_id}%"
             bot.write_message(packet)
-            bot.doSleep(500)
+            time.sleep(1)
             bot.index -= 1
         
     def to_string(self):

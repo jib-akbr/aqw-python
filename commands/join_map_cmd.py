@@ -9,6 +9,8 @@ class JoinMapCmd(Command):
     
     def execute(self, bot: Bot):
         bot.is_joining_map = True
+        bot.ensure_leave_from_combat()
+        
         if self.roomNumber != None:
             msg = f"%xt%zm%cmd%1%tfer%{bot.player.USER}%{self.mapName}-{self.roomNumber}%"
         elif bot.roomNumber != None:
@@ -17,7 +19,6 @@ class JoinMapCmd(Command):
         else:
             msg = f"%xt%zm%cmd%1%tfer%{bot.player.USER}%{self.mapName}%"
         bot.write_message(msg)
-        bot.doSleep(500)
         
     def to_string(self):
         if self.roomNumber != None:

@@ -4,7 +4,7 @@ from model import Monster
 
 class UseSkillCmd(Command):
     
-    def __init__(self, index: int = 0, target_monsters: str = "*"):
+    def __init__(self, index: int = 0, target_monsters: str = "*", hunt: bool = False):
         self.index = index
         self.target_monsters = target_monsters
     
@@ -27,6 +27,7 @@ class UseSkillCmd(Command):
         if skill["tgt"] == "h": 
             priority_monsters_id = []
             cell_monsters_id = [mon.mon_map_id for mon in bot.monsters if mon.frame == bot.player.CELL]
+            final_ids = []
             if self.target_monsters != "*":
                 # Mapping priority_monsters_id
                 for target_monster in self.target_monsters.split(','):
@@ -42,12 +43,13 @@ class UseSkillCmd(Command):
                         cell_monsters_id.pop(0)
                         cell_monsters_id.insert(0, priority_monsters_id[0])
                 # Remove duplicate monster id and keep the order
-                final_ids = []
                 seen = set()
                 for monster_id in cell_monsters_id:
                     if monster_id not in seen:
                         final_ids.append(monster_id)
                         seen.add(monster_id)
+            else:
+                final_ids = cell_monsters_id
             bot.use_skill_to_monster("a" if bot.skillNumber == 0 else bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             bot.use_skill_to_player(bot.skillNumber, max_target)

@@ -21,9 +21,9 @@ atkExample = [
 
 generalAttack = [
     skillCmd.createSkill(0),
-    skillCmd.createSkill(3),
     skillCmd.createSkill(1),
-    skillCmd.createSkill(0),
     skillCmd.createSkill(2),
+    skillCmd.createSkill(0),
+    skillCmd.createSkill(3),
     skillCmd.createSkill(4),
 ]

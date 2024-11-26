@@ -15,4 +15,4 @@ class IsInInvCmd(Command):
             bot.index += 1
         
     def to_string(self):
-        return f"Is in inv : {"[Temp]" * self.isTemp} {self.itemName} {self.operator} {self.itemQty} "
+        return f"Is in inv : {'[Temp]' * self.isTemp} {self.itemName} {self.operator} {self.itemQty} "

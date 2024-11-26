@@ -15,11 +15,10 @@ from model import Shop
 from model import Monster
 
 class Bot:
-    charLoadComplete= False
+    is_chat_load_complete= False
     is_joining_map = False
     cmds = []
     index = 0
-    monmap = []
     areaId = None
     canuseskill = True
     sleep = False
@@ -31,6 +30,7 @@ class Bot:
     is_client_connected = False
     serverInfo = None
     client_socket = None
+    current_area = None
     loaded_quest_datas = []
     loaded_shop_datas = []
     registered_auto_quest_ids = []
@@ -118,7 +118,7 @@ class Bot:
                         self.player.ISDEAD = False
                         continue
             # Execute a command
-            if self.charLoadComplete:
+            if self.is_chat_load_complete:
                 if self.is_joining_map:
                     continue
                 if self.index >= len(self.cmds):
@@ -208,8 +208,10 @@ class Bot:
                 username = data["data"]["strUsername"]
                 access_level = int(data["data"]["intAccessLevel"])
                 self.check_user_access_level(username, access_level)
+            elif cmd == "equipItem":
+                pass
             elif cmd == "loadInventoryBig":
-                self.charLoadComplete = True
+                self.is_chat_load_complete = True
                 self.player.INVENTORY = data["items"]
                 self.player.FACTIONS = data.get("factions", [])
                 for item in self.player.INVENTORY:
@@ -218,13 +220,15 @@ class Bot:
                             self.player.EQUIPPED[item["sType"]] = item
                         elif item["sES"] == "Weapon":
                             self.player.EQUIPPED["Weapon"] = item
-            # Monster respawned
-            elif cmd =="mtls":
+            elif cmd == "mtls":
                 for mon in self.monsters:
                     if mon.mon_map_id == str(data["id"]):
                         mon.is_alive = int(data["o"]["intState"]) > 0
                         mon.current_hp = int(data["o"]["intHP"])
                         break
+            elif cmd == "uotls":
+                if str(data['unm']) == str(self.player.USER):
+                    self.player.MAX_HP = int(data['o']['intHPMax'])
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
             elif cmd == "stu":
@@ -246,9 +250,9 @@ class Bot:
                         pass
                 if p:
                     player = p.get(self.username)
-                    hp = player.get("intHP") if player else None
-                    if hp:
-                        self.player.CURRENT_HP = hp
+                    if player:
+                        self.player.CURRENT_HP = player.get("intHP", self.player.CURRENT_HP)
+                        self.player.IS_IN_COMBAT = int(player.get("intState", 0)) == 2
                 if m:
                     for mon_map_id, mon_condition in m.items():
                         for mon in self.monsters:
@@ -354,21 +358,21 @@ class Bot:
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
             elif cmd == "turnIn":
-                sItems = data.get("sItems").split(':')
-                itemId = sItems[0]
-                iQty = int(sItems[1])
-                for i, item in enumerate(self.player.TEMPINVENTORY):
-                    if str(item["ItemID"]) == itemId:
-                        if item["iQty"] - iQty == 0:
-                            del self.player.TEMPINVENTORY[i]
-                        else:
-                            item["iQty"] -= iQty
-                for i, item in enumerate(self.player.INVENTORY):
-                    if str(item["ItemID"]) == itemId:
-                        if item["iQty"] - iQty == 0:
-                            del self.player.INVENTORY[i]
-                        else:
-                            item["iQty"] -= iQty
+                for s_item in sItems:
+                    itemId = s_item.split(':')[0]
+                    iQty = int(s_item.split(':')[1])
+                    for i, item in enumerate(self.player.TEMPINVENTORY):
+                        if str(item["ItemID"]) == itemId:
+                            if item["iQty"] - iQty == 0:
+                                del self.player.TEMPINVENTORY[i]
+                            else:
+                                item["iQty"] -= iQty
+                    for i, item in enumerate(self.player.INVENTORY):
+                        if str(item["ItemID"]) == itemId:
+                            if item["iQty"] - iQty == 0:
+                                del self.player.INVENTORY[i]
+                            else:
+                                item["iQty"] -= iQty
             elif cmd == "event":
                 print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
                 if data["args"]["zoneSet"]  == "A":
@@ -458,12 +462,12 @@ class Bot:
                     for req_item in loaded_quest["turnin"]:
                         if str(req_item["ItemID"]) == str(item_id):
                             invent_item = (
-                                self.player.get_item_temp_inventory(itemId=item_id) 
+                                self.player.get_item_temp_inventory_by_id(itemId=item_id) 
                                 if is_temp 
-                                else self.player.get_item_inventory(itemId=item_id)
+                                else self.player.get_item_inventory_by_id(itemId=item_id)
                             )
                             if invent_item:
-                                print(f"{invent_item["sName"]}: {invent_item["iQty"]}/{req_item["iQty"]}")
+                                # print(f"{invent_item["sName"]}: {invent_item["iQty"]}/{req_item["iQty"]}")
                                 if int(invent_item["iQty"]) >= int(req_item["iQty"]):
                                     all_req_items_completed = True
                                 else:
@@ -624,6 +628,11 @@ class Bot:
             if i == toRemove:
                 self.user_ids.remove(i)
                 break
+        
+    def ensure_leave_from_combat(self, sleep_ms: int = 2000):
+        if self.player.IS_IN_COMBAT:
+            self.jump_cell(self.player.CELL, self.player.PAD)
+            time.sleep(sleep/1000)
         
     def jump_cell(self, cell, pad):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"

@@ -24,7 +24,14 @@ class Player:
     GOLDFARMED = 0
     EXPFARMED = 0
     ISDEAD = False
+    MAX_HP = 9999
     CURRENT_HP = 9999
+    IS_IN_COMBAT = False
+    
+    # Player intState
+    # 0 = dead
+    # 1 = alive, not in combat
+    # 2 = alive, in combat
 
     listTypeEquip = ["Pet", "Cape", "Class", "Misc", "Armor", "Helm"]
     EQUIPPED = {}
@@ -109,13 +116,13 @@ class Player:
                 return item
         return None
     
-    def get_item_inventory(self, itemId):
+    def get_item_inventory_by_id(self, itemId):
         for item in self.INVENTORY:
             if str(item['ItemID']) == str(itemId):
                 return item
         return None
     
-    def get_item_temp_inventory(self, itemId):
+    def get_item_temp_inventory_by_id(self, itemId):
         for item in self.TEMPINVENTORY:
             if str(item['ItemID']) == str(itemId):
                 return item
