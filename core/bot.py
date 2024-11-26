@@ -126,7 +126,7 @@ class Bot:
                 cmd = self.cmds[self.index]
                 self.handle_command(cmd)           
                 self.index += 1
-                if cmd.skip_delay:
+                if not cmd.skip_delay:
                     self.sleepUntil = time.time() + self.cmdDelay/1000
         print('BOT STOPPED\n')
         
@@ -209,6 +209,7 @@ class Bot:
                 access_level = int(data["data"]["intAccessLevel"])
                 self.check_user_access_level(username, access_level)
             elif cmd == "equipItem":
+                
                 pass
             elif cmd == "loadInventoryBig":
                 self.is_chat_load_complete = True
