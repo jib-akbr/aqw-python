@@ -357,6 +357,7 @@ class Bot:
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
             elif cmd == "turnIn":
+                sItems = data.get("sItems").split(':')
                 for s_item in sItems:
                     itemId = s_item.split(':')[0]
                     iQty = int(s_item.split(':')[1])
