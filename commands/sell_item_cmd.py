@@ -10,7 +10,7 @@ class SellItemCmd(Command):
     def execute(self, bot: Bot):
         for item in bot.player.INVENTORY:
             if item["sName"].lower() == self.item_name.lower():
-                packet = f"%xt%zm%sellItem%{bot.areaId}%{item["ItemID"]}%{self.qty}%{int(item["CharItemID"])}%"
+                packet = f"%xt%zm%sellItem%{bot.areaId}%{item['ItemID']}%{self.qty}%{int(item['CharItemID'])}%"
                 bot.write_message(packet)
                 bot.doSleep(500)
                 break

@@ -9,7 +9,7 @@ class InvToBankCmd(Command):
     def execute(self, bot: Bot):
         item = bot.player.get_item_inventory(self.itemName)        
         if item:
-            packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item["ItemID"]}%{int(item["CharItemID"])}%"
+            packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item['ItemID']}%{int(item['CharItemID'])}%"
             bot.write_message(packet)
             is_exist = False
             for itemBank in bot.player.BANK:

@@ -463,7 +463,7 @@ class Bot:
                                 else self.player.get_item_inventory(itemId=item_id)
                             )
                             if invent_item:
-                                print(f"{invent_item["sName"]}: {invent_item["iQty"]}/{req_item["iQty"]}")
+                                print(f"{invent_item['sName']}: {invent_item['iQty']}/{req_item['iQty']}")
                                 if int(invent_item["iQty"]) >= int(req_item["iQty"]):
                                     all_req_items_completed = True
                                 else:
