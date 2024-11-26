@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class UpIndexCmd(Command):
+    skip_delay = True
     
     def __init__(self, value: int):
         self.value = value

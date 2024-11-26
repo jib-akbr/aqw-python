@@ -25,3 +25,4 @@ from .equip_item_cmd import EquipItemCmd
 from .equip_scroll_cmd import EquipScrollCmd
 from .is_item_equiped_cmd import IsItemEquipedCmd
 from .is_item_not_equiped_cmd import IsItemNotEquipedCmd
+from .hunt_monster_cmd import HuntMonsterCmd

@@ -126,7 +126,8 @@ class Bot:
                 cmd = self.cmds[self.index]
                 self.handle_command(cmd)           
                 self.index += 1
-                self.sleepUntil = time.time() + self.cmdDelay/1000
+                if cmd.skip_delay:
+                    self.sleepUntil = time.time() + self.cmdDelay/1000
         print('BOT STOPPED\n')
         
     def print_commands(self):
@@ -220,15 +221,17 @@ class Bot:
                             self.player.EQUIPPED[item["sType"]] = item
                         elif item["sES"] == "Weapon":
                             self.player.EQUIPPED["Weapon"] = item
+            # on monster spwaned in map
             elif cmd == "mtls":
                 for mon in self.monsters:
                     if mon.mon_map_id == str(data["id"]):
                         mon.is_alive = int(data["o"]["intState"]) > 0
-                        mon.current_hp = int(data["o"]["intHP"])
+                        mon.current_hp = int(data["o"].get("intHP", mon.current_hp))
                         break
+            # on player spwaned in map
             elif cmd == "uotls":
                 if str(data['unm']) == str(self.player.USER):
-                    self.player.MAX_HP = int(data['o']['intHPMax'])
+                    self.player.MAX_HP = int(data['o'].get('intHPMax', self.player.MAX_HP))
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
             elif cmd == "stu":
@@ -577,27 +580,34 @@ class Bot:
     def check_is_skill_safe(self, skill: int):
         conditions = {
             "Void Highlord": {
-                "hp_threshold": 2000,
+                "hp_threshold": 50, # in percentage of current hp from max hp
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
             "Scarlet Sorceress": {
-                "hp_threshold": 1500,
+                "hp_threshold": 50,
                 "skills_to_check": [1, 4],
                 "condition": lambda hp, threshold: hp < threshold
             },
+            "Dragon of Time": {
+                "hp_threshold": 40,
+                "skills_to_check": [1, 3],
+                "condition": lambda hp, threshold: hp < threshold
+            },
             "ArchPaladin": {
-                "hp_threshold": 2000,
+                "hp_threshold": 40,
                 "skills_to_check": [3],
                 "condition": lambda hp, threshold: hp > threshold
-            }
+            },
         }
         # Get the class and its conditions
-        equipped_class = str(self.player.EQUIPPED["Class"])
+        equipped_class = str(self.player.EQUIPPED["Class"]['sName'])
         if equipped_class in conditions:
             condition = conditions[equipped_class]
+            current_hp = self.player.CURRENT_HP
+            max_hp = self.player.MAX_HP
             # Check if the current conditions match
-            if skill in condition["skills_to_check"] and condition["condition"](self.player.CURRENT_HP, condition["hp_threshold"]):
+            if skill in condition["skills_to_check"] and condition["condition"]((current_hp / max_hp) * 100, condition["hp_threshold"]):
                 return False
         return True
 

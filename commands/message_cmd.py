@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class MessageCmd(Command):
+    skip_delay = True
     
     def __init__(self, msg: str):
         self.msg = msg

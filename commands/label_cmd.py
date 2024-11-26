@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class LabelCmd(Command):
+    skip_delay = True
     
     def __init__(self, label: str):
         self.label = label.upper()

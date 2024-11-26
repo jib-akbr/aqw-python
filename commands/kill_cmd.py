@@ -8,14 +8,7 @@ class KillCmd(Command):
         self.monsterName = monsterName
     
     def execute(self, bot: Bot):
-        isMonsterAlive = True
-        while isMonsterAlive:
-            UseSkillCmd(0)
-            UseSkillCmd(1)
-            UseSkillCmd(2)
-            UseSkillCmd(0)
-            UseSkillCmd(3)
-            UseSkillCmd(4)
+        pass
         
     def to_string(self):
         return f"Kill : {self.monsterName}"

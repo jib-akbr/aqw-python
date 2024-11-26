@@ -27,3 +27,13 @@ generalAttack = [
     skillCmd.createSkill(3),
     skillCmd.createSkill(4),
 ]
+
+def attack_monster(monster_name: str):
+    return [
+        skillCmd.createSkill(0, monster_name),
+        skillCmd.createSkill(1),
+        skillCmd.createSkill(2),
+        skillCmd.createSkill(0),
+        skillCmd.createSkill(3),
+        skillCmd.createSkill(4),
+    ]

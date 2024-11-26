@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class IsInInvCmd(Command):
+    skip_delay = True
     
     def __init__(self, itemName: str, itemQty: int = 1, operator: str = ">=", isTemp: bool = False):
         self.itemName = itemName

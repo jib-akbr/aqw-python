@@ -4,6 +4,8 @@ from model import Monster
 
 class UseSkillCmd(Command):
     
+    skip_delay = True
+    
     def __init__(self, index: int = 0, target_monsters: str = "*", hunt: bool = False):
         self.index = index
         self.target_monsters = target_monsters

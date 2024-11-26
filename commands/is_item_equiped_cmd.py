@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class IsItemEquipedCmd(Command):
+    skip_delay = True
     
     def __init__(self, item_name: str):
         self.item_name = item_name
