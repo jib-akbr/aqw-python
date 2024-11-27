@@ -29,3 +29,5 @@ from .is_not_in_inv_cmd import IsNotInInvCmd
 from .equip_item_cmd import EquipItemCmd
 from .wait_player_count_cmd import WaitPlayerCountCmd
 from .hunt_monster_cmd import HuntMonsterCmd
+from .can_turn_in_quest import CanTurnInQuestCmd
+from .cannot_turn_in_quest import CannotTurnInQuestCmd

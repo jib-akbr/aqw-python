@@ -667,6 +667,24 @@ class Bot:
         best_cell = max(cell_counts, key=cell_counts.get)
         return best_cell
 
+    def can_turn_in_quest(self, questId: int) -> bool:
+        for loaded_quest in self.loaded_quest_datas:
+            if str(loaded_quest.get("QuestID", 0))  == str(questId):
+                return self._check_req_inventory(loaded_quest["turnin"])
+
+    def _check_req_inventory(self, quest_data) -> bool:
+        for req_item in quest_data:
+            required_item_id = req_item["ItemID"]
+            required_qty = req_item["iQty"]
+
+            item = self.player.get_item_inventory_by_id(required_item_id) or \
+                self.player.get_item_temp_inventory_by_id(required_item_id)
+
+            if not item or item["iQty"] < required_qty:
+                return False
+
+        return True
+
     def reset_cmds(self):
         self.cmds = []
         
