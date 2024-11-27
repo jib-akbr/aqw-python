@@ -11,7 +11,7 @@ b = Bot(
     showChat=True
 )
 
-b.set_login_info("tuvy", "katasandisalah", "twilly")
+b.set_login_info("u", "p", "twilly")
 
 def createCommand(mapName:str, cellpad: list[str], itemName: str, itemQty: int, monsName: str):
     skillCmd = cmd.UseSkillCmd()
