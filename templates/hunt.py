@@ -52,8 +52,8 @@ def hunt_monster_quest_item(
         monster_name: str = "*",
         most_monster: bool = False,
     ):
-    label_done = f"Hunt for {item_name} is done"
-    lebel_farming = f"Hunt for {item_name}"
+    label_done = f"[{quest_id}] Hunt for {item_name} is done"
+    lebel_farming = f"[{quest_id}] Hunt for {item_name}"
     label_stop = f"stopping quest {quest_id}"
     return [
         cmd.AcceptQuestCmd(quest_id),
