@@ -11,13 +11,13 @@ b = Bot(
     showChat=True
 )
 
-b.set_login_info("u", "p", "twilly")
+b.set_login_info("tuvy", "katasandisalah", "twilly")
 
 def createCommand(mapName:str, cellpad: list[str], itemName: str, itemQty: int, monsName: str):
     skillCmd = cmd.UseSkillCmd()
     return [
         cmd.JoinMapCmd(mapName, 9909),
-        cmd.JumpCmd(cellpad[0], cellpad[1]),
+        cmd.HuntMonsterCmd(monsName, True),
         cmd.LabelCmd(itemName),
         skillCmd.createSkill(0, monsName),
         skillCmd.createSkill(2),

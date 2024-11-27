@@ -643,7 +643,7 @@ class Bot:
     def ensure_leave_from_combat(self, sleep_ms: int = 2000):
         if self.player.IS_IN_COMBAT:
             self.jump_cell(self.player.CELL, self.player.PAD)
-            time.sleep(sleep/1000)
+            time.sleep(sleep_ms/1000)
         
     def jump_cell(self, cell, pad):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"
@@ -653,6 +653,19 @@ class Bot:
 
     def walk_to(self, x, y, speed = 8):
         self.write_message(f"%xt%zm%mv%{self.areaId}%{x}%{y}%{speed}%")
+    
+    def find_best_cell(self, monster_name):
+        filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower()]
+
+        if not filtered_monsters:
+            return None
+
+        cell_counts = {}
+        for mon in filtered_monsters:
+            cell_counts[mon.frame] = cell_counts.get(mon.frame, 0) + 1
+
+        best_cell = max(cell_counts, key=cell_counts.get)
+        return best_cell
 
     def reset_cmds(self):
         self.cmds = []
