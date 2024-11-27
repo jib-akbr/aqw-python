@@ -398,6 +398,13 @@ class Bot:
                 dropItems = data.get('dropItems')
                 dropItemsName = [item["sName"] for item in dropItems.values() if "sName" in item]
                 print(Fore.YELLOW + f"Wheel: {dropItemsName}" + Fore.WHITE)
+            elif cmd == "acceptQuest":
+                if data["bSuccess"] == 1:
+                    quest_id = data["QuestID"]
+                    loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
+                    if not str(quest_id) in str(loaded_quest_ids):
+                        self.write_message(f"%xt%zm%getQuests%{self.areaId}%{quest_id}%")
+                        self.doSleep(500)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
@@ -544,10 +551,6 @@ class Bot:
         self.write_message(packet)
     
     def accept_quest(self, quest_id: int):
-        loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
-        if not str(quest_id) in str(loaded_quest_ids):
-            self.write_message(f"%xt%zm%getQuests%{self.areaId}%{quest_id}%")
-            self.doSleep(500)
         self.write_message(f"%xt%zm%acceptQuest%{self.areaId}%{quest_id}%")
         self.doSleep(500)
         

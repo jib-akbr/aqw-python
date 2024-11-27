@@ -16,20 +16,20 @@ class HuntMonsterCmd(Command):
                     and monster.is_alive \
                     and bot.player.CELL == monster.frame:
                 return
+
         # Hunt monster in other cell
+        if self.mostMonsters:
+            cell = bot.find_best_cell(self.monsterName)
+            if cell:
+                bot.jump_cell(cell, "Left")
+                return
         for monster in bot.monsters:
-            if self.mostMonsters:
-                cell = bot.find_best_cell(self.monsterName)
-                if cell:
-                    bot.jump_cell(cell, "Left")
-                    return
-            else:
-                if monster.mon_name.lower() == self.monsterName.lower() \
-                        and monster.is_alive \
-                        and bot.player.CELL != monster.frame:
-                    # TODO need to handle the rigth pad
-                    bot.jump_cell(monster.frame, "Left")
-                    return
+            if monster.mon_name.lower() == self.monsterName.lower() \
+                    and monster.is_alive \
+                    and bot.player.CELL != monster.frame:
+                # TODO need to handle the rigth pad
+                bot.jump_cell(monster.frame, "Left")
+                return
         
     def to_string(self):
         return f"Hunt for : {self.monsterName}"
