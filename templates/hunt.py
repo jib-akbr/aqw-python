@@ -44,25 +44,22 @@ def hunt_item_cmds(
         cmd.SleepCmd(1000)
     ]
 
-def hunt_monster_quest_item(
+def hunt_monster_quest_temp_item(
         quest_id: int,
-        item_name: str, 
         map_name: str, 
         room_number: int = None, 
         monster_name: str = "*",
         most_monster: bool = False,
     ):
-    label_done = f"[{quest_id}] Hunt for {item_name} is done"
-    lebel_farming = f"[{quest_id}] Hunt for {item_name}"
+    """this function is used to do a quest required only one kind of temp item"""
+    label_done = f"Hunt for quest [{quest_id}] is done"
+    lebel_farming = f"Hunt for quest [{quest_id}]"
     label_stop = f"stopping quest {quest_id}"
     return [
         cmd.AcceptQuestCmd(quest_id),
         cmd.SleepCmd(1000),
         cmd.QuestNotInProgressCmd(quest_id),
         cmd.ToLabelCmd(label_stop),
-        # Check is item in bank
-        cmd.IsInBankCmd(item_name),
-        cmd.BankToInvCmd(item_name),
         
         # Check is item qty already fullfiled
         cmd.CanTurnInQuestCmd(quest_id),

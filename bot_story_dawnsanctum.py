@@ -1,6 +1,6 @@
 from core.bot import Bot
 from templates import attack
-from templates.hunt import hunt_item_cmds, hunt_monster_quest_item
+from templates.hunt import hunt_item_cmds, hunt_monster_quest_temp_item
 import commands as cmd
 
 
@@ -46,18 +46,16 @@ UseableMonsters = [
 
 b.add_cmds([
     # 9977 | Wunjo, Reversed - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9977,
-        item_white_list[0],
         map_name,
         private_room_number,
         UseableMonsters[0]
     ),
 
     # 9978 | Berkana - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9978,
-        item_white_list[1],
         map_name,
         private_room_number,
         UseableMonsters[1]
@@ -82,9 +80,8 @@ b.add_cmds([
 
 
     # 9980 | Gebo - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9980,
-        item_white_list[3],
         map_name,
         private_room_number,
         UseableMonsters[3]
@@ -108,18 +105,16 @@ b.add_cmds([
     cmd.LabelCmd(makeLabelStoppingQuest(9981)),
 
     # 9982 | Hagalaz - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9982,
-        item_white_list[5],
         map_name,
         private_room_number,
         UseableMonsters[5]
     ),
 
     # 9983 | Mannaz - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9983,
-        item_white_list[6],
         map_name,
         private_room_number,
         UseableMonsters[6]
@@ -149,18 +144,16 @@ b.add_cmds([
     cmd.LabelCmd(makeLabelStoppingQuest(9984)),
 
     # 9985 | Othala - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9985,
-        item_white_list[6],
         map_name,
         private_room_number,
         UseableMonsters[7]
     ),
 
     # 9986 | Isa, Reversed - Realized
-    *hunt_monster_quest_item(
+    *hunt_monster_quest_temp_item(
         9986,
-        item_white_list[10],
         map_name,
         private_room_number,
         UseableMonsters[8]
