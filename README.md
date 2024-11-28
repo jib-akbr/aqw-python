@@ -5,6 +5,6 @@ Arrange your commands, the bot will execute them in sequence. See example in bot
 
 **required** python version 3.9+
 ```bash
-  python bot_tes.py
+  python -m examples.bot_tes
 ```
 
