@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class IsNotInMapCmd(Command):
+    skip_delay = True
     
     def __init__(self, mapName: str):
         self.mapName = mapName

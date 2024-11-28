@@ -1,5 +1,6 @@
 import socket
 from core.player import Player
+from core.utils import normalize
 import json
 import time
 from xml.etree import ElementTree
@@ -287,7 +288,7 @@ class Bot:
                         for shop_item in loaded_shop.items:
                             if str(shop_item.item_id) ==  str(data["ItemID"]):
                                 bought = {
-                                    "sName": shop_item.item_name,
+                                    "sName": normalize(shop_item.item_name),
                                     "ItemID": data["ItemID"],
                                     "CharItemID": data["CharItemID"],
                                     "iQty": data["iQty"]
@@ -687,7 +688,7 @@ class Bot:
             item = self.player.get_item_inventory_by_id(required_item_id) or \
                 self.player.get_item_temp_inventory_by_id(required_item_id)
 
-            if not item or item["iQty"] < required_qty:
+            if not item or int(item["iQty"]) < int(required_qty):
                 return False
 
         return True

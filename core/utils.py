@@ -15,3 +15,6 @@ def checkOperator(obj1, obj2, operator: str):
     if operator == "!=":
         flag = obj1 != obj2
     return flag
+
+def normalize(text: str):
+    return text.lower().strip().replace("`", "\'").replace("\❜", "\'")

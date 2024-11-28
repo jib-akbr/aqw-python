@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from .utils import checkOperator
 from colorama import Fore
 import json
+from core.utils import normalize
 
 class Player:
     USER = ""
@@ -106,13 +107,13 @@ class Player:
 
     def get_item_inventory(self, itemName: str):
         for item in self.INVENTORY:
-            if item['sName'].lower() == itemName.lower():
+            if normalize(item['sName']) == normalize(itemName):
                 return item
         return None
     
     def get_item_temp_inventory(self, itemName: str):
         for item in self.TEMPINVENTORY:
-            if item['sName'].lower() == itemName.lower():
+            if normalize(item['sName']) == normalize(itemName):
                 return item
         return None
     
@@ -130,7 +131,7 @@ class Player:
     
     def get_item_bank(self, itemName: str):
         for item in self.BANK:
-            if item['sName'].lower() == itemName.lower():
+            if normalize(item['sName']) == normalize(itemName):
                 return item
         return None
 
@@ -138,7 +139,7 @@ class Player:
         inv = self.BANK
         invItemQty = 0
         for item in inv:
-            if item["sName"].lower() == itemName.lower():
+            if normalize(item["sName"]) == normalize(itemName):
                 invItemQty = item["iQty"]
                 break
         print(f"actual: {itemName} [{invItemQty}]")
@@ -150,7 +151,7 @@ class Player:
         if isTemp:
             inv = self.TEMPINVENTORY
         for item in inv:
-            if item["sName"].lower() == itemName.lower():
+            if normalize(item["sName"]) == normalize(itemName):
                 invItemQty = item["iQty"]
                 break
         print(f"actual: {itemName} [{invItemQty}]")

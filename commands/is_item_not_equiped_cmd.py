@@ -13,4 +13,4 @@ class IsItemNotEquipedCmd(Command):
             bot.index += 1
         
     def to_string(self):
-        return f"Is item equiped : {self.item_name}"
+        return f"Is item not equiped : {self.item_name}"

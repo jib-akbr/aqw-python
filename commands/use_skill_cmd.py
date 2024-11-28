@@ -52,6 +52,7 @@ class UseSkillCmd(Command):
                         seen.add(monster_id)
             else:
                 final_ids = cell_monsters_id
+            # print(f"tgt: {final_ids}")
             bot.use_skill_to_monster("a" if bot.skillNumber == 0 else bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             bot.use_skill_to_player(bot.skillNumber, max_target)

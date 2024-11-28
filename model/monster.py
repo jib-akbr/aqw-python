@@ -1,5 +1,16 @@
+from core.utils import normalize
+
 class Monster:
-    mon_name: str = None
+    _mon_name: str = None
+
+    @property
+    def mon_name(self) -> str:
+        return self._mon_name
+
+    @mon_name.setter
+    def mon_name(self, value: str):
+        self._mon_name = normalize(value) if value else None
+        
     frame: str = None
     
     # Init with monBranch json data

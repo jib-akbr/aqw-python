@@ -2,6 +2,7 @@ from core.bot import Bot
 from abstracts.command import Command
 
 class InvToBankCmd(Command):
+    skip_delay = True
     
     def __init__(self, itemName: str):
         self.itemName = itemName
