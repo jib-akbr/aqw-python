@@ -38,6 +38,8 @@ class Bot:
     items_drop_whitelist = []
     commands_thread = threading.Event()
     registered_quests_event = threading.Event()
+    
+    register_quest_spammer = True
 
     def __init__(
             self, 
@@ -64,7 +66,8 @@ class Bot:
         self.login(self.username, self.password, self.server)
         if self.serverInfo:
             asyncio.run(self.connect_client())
-            # self.run_registered_quests()        
+            if self.register_quest_spammer:
+                self.run_registered_quests()        
             asyncio.run(self.run_commands())
     
     def stop_bot(self):
@@ -344,7 +347,7 @@ class Bot:
                     if dropItem.get("CharItemID", None):
                         if itemId in inventItemIds:
                             for playerItem in self.player.INVENTORY:
-                                if str(playerItem["ItemID"]) == itemId:
+                                if str(playerItem["ItemID"]) == str(itemId):
                                     playerItem["iQty"] = dropItem["iQtyNow"]
                                     playerItem["CharItemID"] = dropItem["CharItemID"]
                                     await self.check_registered_quest_completion(itemId)
@@ -355,7 +358,7 @@ class Bot:
                     else:
                         if itemId in tempInventItemIds:
                             for playerItem in self.player.TEMPINVENTORY:
-                                if str(playerItem["ItemID"]) == itemId:
+                                if str(playerItem["ItemID"]) == str(itemId):
                                     playerItem["iQty"] += dropItem["iQty"]
                                     await self.check_registered_quest_completion(itemId, is_temp=True)
                                     break
@@ -461,40 +464,17 @@ class Bot:
         while True:
             while self.is_client_connected:
                 for registered_quest_id in self.registered_auto_quest_ids:
-                    self.turn_in_quest(registered_quest_id)
-                    time.sleep(1)
+                    if self.can_turn_in_quest(registered_quest_id):
+                        self.turn_in_quest(registered_quest_id)
+                    time.sleep(2)
             self.registered_quests_event.wait()
 
-    # this?? YES
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
-        # Mapping data of registered_auto_quest_ids and loaded_quest_datas
+        if self.register_quest_spammer:
+            return
         for registered_quest_id in self.registered_auto_quest_ids:
-            for loaded_quest in self.loaded_quest_datas:
-                # Get quest detail of registered quest from loaded quest data
-                str_quest_id = str(registered_quest_id)
-                if loaded_quest.get("QuestID", 0)  == registered_quest_id:
-                    # Checking all required items for the quest is in the player's inventory
-                    all_req_items_completed = False
-                    for req_item in loaded_quest["turnin"]:
-                        if str(req_item["ItemID"]) == str(item_id):
-                            invent_item = (
-                                self.player.get_item_temp_inventory_by_id(itemId=item_id) 
-                                if is_temp 
-                                else self.player.get_item_inventory_by_id(itemId=item_id)
-                            )
-                            if invent_item:
-                                # print(f"{invent_item["sName"]}: {invent_item["iQty"]}/{req_item["iQty"]}")
-                                if int(invent_item["iQty"]) >= int(req_item["iQty"]):
-                                    all_req_items_completed = True
-                                else:
-                                    all_req_items_completed = False
-                    # Complete the quest if all required items are in the player's inventory
-                    if all_req_items_completed:   
-                        self.turn_in_quest(registered_quest_id)
-                        time.sleep(1)
-                        self.accept_quest(registered_quest_id)
-                        time.sleep(1)
-                    break
+            if self.can_turn_in_quest(registered_quest_id):
+                self.turn_in_quest(registered_quest_id)
 
     def read_batch(self, conn):
         message_builder = ""
