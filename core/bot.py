@@ -391,6 +391,10 @@ class Bot:
                 is_success = data.get('bSuccess', 0)
                 ccqr_msg = data.get('msg', '')
                 if is_success == 1:
+                    for loaded_quest in self.loaded_quest_datas:
+                        if loaded_quest["QuestID"] == quest_id and quest_id not in self.registered_auto_quest_ids:
+                            self.loaded_quest_datas.remove(loaded_quest)
+                            break
                     print(Fore.YELLOW + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} - {i_rep} rep" + Fore.WHITE)
                 else:
                     print(Fore.RED + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} | {ccqr_msg}" + Fore.WHITE)
