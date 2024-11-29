@@ -147,9 +147,9 @@ class Bot:
             if cmd_string:
                 cmd_string = cmd_string.split(':')
                 if len(cmd_string) > 1:
-                    print(Fore.BLUE + f"[{self.index}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
+                    print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
                 else:
-                    print(Fore.BLUE + f"[{self.index}] {cmd_string[0]}" + Fore.WHITE)
+                    print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}" + Fore.WHITE)
         command.execute(self)
         self.doSleep(self.cmdDelay)
         return
@@ -229,7 +229,7 @@ class Bot:
             elif cmd == "mtls":
                 for mon in self.monsters:
                     if mon.mon_map_id == str(data["id"]):
-                        mon.is_alive = int(data["o"]["intState"]) > 0
+                        mon.is_alive = int(data["o"].get("intState", mon.is_alive)) > 0
                         mon.current_hp = int(data["o"].get("intHP", mon.current_hp))
                         break
             # on player spwaned in map
@@ -259,7 +259,7 @@ class Bot:
                     player = p.get(self.username)
                     if player:
                         self.player.CURRENT_HP = player.get("intHP", self.player.CURRENT_HP)
-                        self.player.IS_IN_COMBAT = int(player.get("intState", 0)) == 2
+                        self.player.IS_IN_COMBAT = int(player.get("intState", self.player.IS_IN_COMBAT)) == 2
                 if m:
                     for mon_map_id, mon_condition in m.items():
                         for mon in self.monsters:
