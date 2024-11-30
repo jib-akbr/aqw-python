@@ -7,30 +7,7 @@ import json
 from core.utils import normalize
 from model.inventory import ItemInventory, ItemType
 
-class Player:
-    USER = ""
-    PASS = ""
-    TOKEN = ""
-    SERVERS = []
-    SKILLS = []
-    SKILLUSED = {}
-    CELL = ""
-    PAD = ""
-    CDREDUCTION = 0
-    LOGINUSERID = 0
-    INVENTORY: List[ItemInventory] = []
-    TEMPINVENTORY: List[ItemInventory] = []
-    BANK: List[ItemInventory] = []
-    FACTIONS = []
-    CHARID = 0
-    GOLD = 0
-    GOLDFARMED = 0
-    EXPFARMED = 0
-    ISDEAD = False
-    MAX_HP = 9999
-    CURRENT_HP = 9999
-    IS_IN_COMBAT = False
-    
+class Player:    
     # Player intState
     # 0 = dead
     # 1 = alive, not in combat
@@ -39,6 +16,26 @@ class Player:
     def __init__(self, user, pwd):
         self.USER = user
         self.PASS = pwd
+        self.TOKEN = ""
+        self.SERVERS = []
+        self.SKILLS = []
+        self.SKILLUSED = {}
+        self.CELL = ""
+        self.PAD = ""
+        self.CDREDUCTION = 0
+        self.LOGINUSERID = 0
+        self.INVENTORY: List[ItemInventory] = []
+        self.TEMPINVENTORY: List[ItemInventory] = []
+        self.BANK: List[ItemInventory] = []
+        self.FACTIONS = []
+        self.CHARID = 0
+        self.GOLD = 0
+        self.GOLDFARMED = 0
+        self.EXPFARMED = 0
+        self.ISDEAD = False
+        self.MAX_HP = 9999
+        self.CURRENT_HP = 9999
+        self.IS_IN_COMBAT = False
 
     def getInfo(self) -> dict:
         url = "https://game.aq.com/game/api/login/now?"

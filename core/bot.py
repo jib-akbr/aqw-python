@@ -18,30 +18,6 @@ from model import Monster
 from model import ItemInventory, ItemType
 
 class Bot:
-    is_chat_load_complete= False
-    is_joining_map = False
-    cmds = []
-    index = 0
-    areaId = None
-    canuseskill = True
-    sleep = False
-    skillNumber = 0
-    skillAnim = None
-    username = ""
-    password = ""
-    server = ""
-    is_client_connected = False
-    serverInfo = None
-    client_socket = None
-    current_area = None
-    loaded_quest_datas = []
-    loaded_shop_datas: List[Shop] = []
-    registered_auto_quest_ids = []
-    items_drop_whitelist = []
-    commands_thread = threading.Event()
-    registered_quests_event = threading.Event()
-    
-    register_quest_spammer = True
 
     def __init__(
             self, 
@@ -58,7 +34,28 @@ class Bot:
         self.showDebug = showDebug
         self.showChat = showChat
         self.items_drop_whitelist = itemsDropWhiteList
+        
+        self.sleepUntil = 0
         self.player = None
+        self.is_chat_load_complete= False
+        self.is_joining_map = False
+        self.cmds = []
+        self.index = 0
+        self.areaId = None
+        self.canuseskill = True
+        self.skillNumber = 0
+        self.skillAnim = None
+        self.username = ""
+        self.password = ""
+        self.server = ""
+        self.server_info = None
+        self.is_client_connected = False
+        self.client_socket = None
+        self.loaded_quest_datas = []
+        self.loaded_shop_datas: List[Shop] = []
+        self.registered_auto_quest_ids = []
+        self.registered_quests_event = threading.Event()
+        self.register_quest_spammer = True
         
     def set_login_info(self, username, password, server):
         self.username = username
@@ -67,7 +64,7 @@ class Bot:
         
     def start_bot(self):
         self.login(self.username, self.password, self.server)
-        if self.serverInfo:
+        if self.server_info:
             asyncio.run(self.connect_client())
             if self.register_quest_spammer:
                 self.run_registered_quests()        
@@ -92,11 +89,11 @@ class Bot:
     def login(self, username, password, server):
         self.player = Player(username, password)
         if self.player.getInfo():
-            self.serverInfo = self.player.getServerInfo(server)
+            self.server_info = self.player.getServerInfo(server)
         
     async def connect_client(self):
-        hostname = self.serverInfo[0] 
-        port = self.serverInfo[1]
+        hostname = self.server_info[0] 
+        port = self.server_info[1]
         self.debug(hostname, port)
         host_ip = socket.gethostbyname(hostname)
         print(f"Connecting to {self.server} server...")
@@ -115,18 +112,16 @@ class Bot:
                 for msg in messages:
                     await self.handle_server_response(msg)
             # Skipping bot commands
-            if self.sleep:
-                if self.sleepUntil > time.time():
-                    time.sleep(0.01)
+            if self.sleepUntil > time.time():
+                time.sleep(0.1)
+                continue
+            else:
+                if self.player.ISDEAD:
+                    self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
+                    self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
+                    self.jump_cell(self.player.CELL, self.player.PAD)
+                    self.player.ISDEAD = False
                     continue
-                else:
-                    self.sleep = False
-                    if self.player.ISDEAD:
-                        self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
-                        self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
-                        self.jump_cell(self.player.CELL, self.player.PAD)
-                        self.player.ISDEAD = False
-                        continue
             # Execute a command
             if self.is_chat_load_complete:
                 if self.is_joining_map:
@@ -591,7 +586,6 @@ class Bot:
         return True
 
     def doSleep(self, sleepms):
-        self.sleep = True
         self.sleepUntil = time.time() + int(sleepms)/1000.0
 
     def extract_user_ids(self, xml_message: str):

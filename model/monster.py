@@ -10,8 +10,6 @@ class Monster:
     @mon_name.setter
     def mon_name(self, value: str):
         self._mon_name = normalize(value) if value else None
-        
-    frame: str = None
     
     # Init with monBranch json data
     def __init__(self, json_data):
@@ -21,3 +19,4 @@ class Monster:
         self.current_hp: int = json_data['intHP']
         self.max_hp: int = json_data['intHPMax']
         self.tes: str = str(json_data.get('tes', None))
+        self.frame: str = None
