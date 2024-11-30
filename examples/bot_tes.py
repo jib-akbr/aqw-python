@@ -1,6 +1,6 @@
 from core.bot import Bot
 import commands as cmd
-from templates import attack
+from templates.attack import attack_monster
 from templates.general import un_bank_items
 
 # Initialize variables
@@ -35,7 +35,7 @@ b.add_cmds([
         cmd.JoinMapCmd("escherion"),
         cmd.JumpCmd("Boss", "Left"),
         cmd.LabelCmd("ATK"),
-        *attack.attack_monster(monster_name= "Staff of Inversion,Escherion"),
+        *attack_monster(monster_name= "Staff of Inversion,Escherion"),
         cmd.ToLabelCmd("ATK"),
         cmd.StopBotCmd()
     ])

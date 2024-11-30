@@ -10,20 +10,20 @@ class InvToBankCmd(Command):
     def execute(self, bot: Bot):
         item = bot.player.get_item_inventory(itemName=self.itemName)        
         if item:
-            packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item['ItemID']}%{int(item['CharItemID'])}%"
+            packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item.item_id}%{item.char_item_id}%"
             bot.write_message(packet)
             is_exist = False
             for itemBank in bot.player.BANK:
-                if itemBank['sName'] == item['sName']:
-                    del itemBank
+                if itemBank.item_name == item.item_name:
+                    bot.player.BANK.remove(itemBank)
                     bot.player.BANK.append(item)
                     is_exist = True
                     break
             if not is_exist:
                 bot.player.BANK.append(item)
             for itemInv in bot.player.INVENTORY:
-                if itemInv['sName'] == item['sName']:
-                    del itemInv
+                if itemInv.item_name == item.item_name:
+                    bot.player.INVENTORY.remove(itemInv)
                     break
         
     def to_string(self):

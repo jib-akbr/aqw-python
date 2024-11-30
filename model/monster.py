@@ -20,3 +20,4 @@ class Monster:
         self.is_alive: bool = int(json_data['intState']) > 0
         self.current_hp: int = json_data['intHP']
         self.max_hp: int = json_data['intHPMax']
+        self.tes: str = str(json_data.get('tes', None))

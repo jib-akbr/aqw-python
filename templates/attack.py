@@ -28,7 +28,7 @@ generalAttack = [
     skillCmd.createSkill(4),
 ]
 
-def attack_monster(monster_name: str):
+def attack_monster(monster_name: str = "*"):
     return [
         skillCmd.createSkill(0, monster_name),
         skillCmd.createSkill(1),

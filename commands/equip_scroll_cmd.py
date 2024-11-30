@@ -13,8 +13,8 @@ class EquipScrollCmd(Command):
         bot.ensure_leave_from_combat()
             
         for item in bot.player.INVENTORY:
-            if item["sName"].lower() == self.item_name.lower():
-                packet = f"%xt%zm%geia%%{bot.areaId}%{self.item_type}%{item['sMeta']}%{item['ItemID']}%"
+            if item.item_name.lower() == self.item_name.lower():
+                packet = f"%xt%zm%geia%%{bot.areaId}%{self.item_type}%{item.s_meta}%{item.item_id}%"
                 bot.write_message(packet)
                 time.sleep(0.5)
                 break

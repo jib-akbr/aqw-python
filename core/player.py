@@ -1,9 +1,11 @@
 import requests
+from typing import List
 from datetime import datetime, timedelta
 from .utils import checkOperator
 from colorama import Fore
 import json
 from core.utils import normalize
+from model.inventory import ItemInventory, ItemType
 
 class Player:
     USER = ""
@@ -16,9 +18,9 @@ class Player:
     PAD = ""
     CDREDUCTION = 0
     LOGINUSERID = 0
-    INVENTORY = []
-    TEMPINVENTORY = []
-    BANK = []
+    INVENTORY: List[ItemInventory] = []
+    TEMPINVENTORY: List[ItemInventory] = []
+    BANK: List[ItemInventory] = []
     FACTIONS = []
     CHARID = 0
     GOLD = 0
@@ -33,9 +35,6 @@ class Player:
     # 0 = dead
     # 1 = alive, not in combat
     # 2 = alive, in combat
-
-    listTypeEquip = ["Pet", "Cape", "Class", "Misc", "Armor", "Helm"]
-    EQUIPPED = {}
 
     def __init__(self, user, pwd):
         self.USER = user
@@ -83,7 +82,8 @@ class Player:
         }
 
         response = requests.request("POST", url, headers=headers, data=data)
-        self.BANK = response.json()
+        for item in response.json():
+            self.BANK.append(ItemInventory(item))
     
     def getServerInfo(self, serverName) -> list[str, int]:
         for server in self.SERVERS:
@@ -105,33 +105,39 @@ class Player:
         skillDetail = self.SKILLS[skillNumber]
         self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) * (1 - self.CDREDUCTION))
 
+    def get_equipped_item(self, item_type: ItemType):
+        for item in self.INVENTORY:
+            if item.s_es == item_type.value and item.is_equipped:
+                return item
+        return None
+
     def get_item_inventory(self, itemName: str):
         for item in self.INVENTORY:
-            if normalize(item['sName']) == normalize(itemName):
+            if item.item_name == normalize(itemName):
                 return item
         return None
     
     def get_item_temp_inventory(self, itemName: str):
         for item in self.TEMPINVENTORY:
-            if normalize(item['sName']) == normalize(itemName):
+            if item.item_name == normalize(itemName):
                 return item
         return None
     
     def get_item_inventory_by_id(self, itemId):
         for item in self.INVENTORY:
-            if str(item['ItemID']) == str(itemId):
+            if item.item_id == str(itemId):
                 return item
         return None
     
     def get_item_temp_inventory_by_id(self, itemId):
         for item in self.TEMPINVENTORY:
-            if str(item['ItemID']) == str(itemId):
+            if item.item_id == str(itemId):
                 return item
         return None
     
     def get_item_bank(self, itemName: str):
         for item in self.BANK:
-            if normalize(item['sName']) == normalize(itemName):
+            if item.item_name == normalize(itemName):
                 return item
         return None
 
@@ -139,8 +145,8 @@ class Player:
         inv = self.BANK
         invItemQty = 0
         for item in inv:
-            if normalize(item["sName"]) == normalize(itemName):
-                invItemQty = item["iQty"]
+            if item.item_name == normalize(itemName):
+                invItemQty = item.qty
                 break
         print(f"actual: {itemName} [{invItemQty}]")
         return checkOperator(invItemQty, qty, operator)
@@ -151,8 +157,8 @@ class Player:
         if isTemp:
             inv = self.TEMPINVENTORY
         for item in inv:
-            if normalize(item["sName"]) == normalize(itemName):
-                invItemQty = item["iQty"]
+            if item.item_name == normalize(itemName):
+                invItemQty = item.qty
                 break
         print(f"actual: {itemName} [{invItemQty}]")
         return checkOperator(invItemQty, qty, operator)

@@ -1,8 +1,10 @@
+from .inventory import ItemInventory
+
 class Shop:
     def __init__(self, json_data):
         items = []
         for shop_item in json_data['items']:
-            items.append(ShopItem(shop_item))
+            items.append(ItemInventory(shop_item))
         self.shop_id: str = str(json_data['ShopID'])
         self.shop_name: str = json_data['sName']
         self.items = items
@@ -14,10 +16,10 @@ class Shop:
                 return item
         return None
 
-class ShopItem:
-    def __init__(self, json_data):
-        self.item_id: str = str(json_data['ItemID'])
-        self.shop_item_id: str = str(json_data['ShopItemID'])
-        self.item_name: str = json_data['sName']
-        self.cost: int = json_data['iCost']
-        self.is_acs: bool = str(json_data['bCoins']) == "1"
+# class ShopItem:
+#     def __init__(self, json_data):
+#         self.item_id: str = str(json_data['ItemID'])
+#         self.shop_item_id: str = str(json_data['ShopItemID'])
+#         self.item_name: str = json_data['sName']
+#         self.cost: int = json_data['iCost']
+#         self.is_acs: bool = str(json_data['bCoins']) == "1"

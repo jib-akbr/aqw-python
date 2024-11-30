@@ -9,7 +9,7 @@ class IsItemNotEquipedCmd(Command):
     
     def execute(self, bot: Bot):
         item = bot.player.get_item_inventory(self.item_name)
-        if not item or int(item['bEquip']) == 1:
+        if not item or item.is_equipped:
             bot.index += 1
         
     def to_string(self):

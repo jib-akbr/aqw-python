@@ -19,7 +19,7 @@ class BuyItemCmd(Command):
                 break
         if shop:
             for shop_item in shop.items:
-                if shop_item.item_name == self.item_name:
+                if shop_item.item_name == self.item_name.lower():
                     packet = f"%xt%zm%buyItem%{bot.areaId}%{shop_item.item_id}%{shop.shop_id}%{shop_item.shop_item_id}%{self.qty}%"
                     bot.write_message(packet)
                     time.sleep(0.5)

@@ -3,6 +3,7 @@ from core.player import Player
 from core.utils import normalize
 import json
 import time
+from typing import List
 from xml.etree import ElementTree
 import xml.etree.ElementTree as ET
 from collections import deque
@@ -14,6 +15,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
+from model import ItemInventory, ItemType
 
 class Bot:
     is_chat_load_complete= False
@@ -33,7 +35,7 @@ class Bot:
     client_socket = None
     current_area = None
     loaded_quest_datas = []
-    loaded_shop_datas = []
+    loaded_shop_datas: List[Shop] = []
     registered_auto_quest_ids = []
     items_drop_whitelist = []
     commands_thread = threading.Event()
@@ -56,6 +58,7 @@ class Bot:
         self.showDebug = showDebug
         self.showChat = showChat
         self.items_drop_whitelist = itemsDropWhiteList
+        self.player = None
         
     def set_login_info(self, username, password, server):
         self.username = username
@@ -71,6 +74,9 @@ class Bot:
             asyncio.run(self.run_commands())
     
     def stop_bot(self):
+        self.player.BANK = []
+        self.player.INVENTORY = []
+        self.player.TEMPINVENTORY = []
         self.is_client_connected = False
         if self.client_socket:
             self.client_socket.close()
@@ -213,18 +219,12 @@ class Bot:
                 access_level = int(data["data"]["intAccessLevel"])
                 self.check_user_access_level(username, access_level)
             elif cmd == "equipItem":
-                
                 pass
             elif cmd == "loadInventoryBig":
                 self.is_chat_load_complete = True
-                self.player.INVENTORY = data["items"]
+                for item in data["items"]:
+                    self.player.INVENTORY.append(ItemInventory(item))
                 self.player.FACTIONS = data.get("factions", [])
-                for item in self.player.INVENTORY:
-                    if item["bEquip"] == 1:
-                        if item["sType"] in self.player.listTypeEquip:
-                            self.player.EQUIPPED[item["sType"]] = item
-                        elif item["sES"] == "Weapon":
-                            self.player.EQUIPPED["Weapon"] = item
             # on monster spwaned in map
             elif cmd == "mtls":
                 for mon in self.monsters:
@@ -264,11 +264,8 @@ class Bot:
                     for mon_map_id, mon_condition in m.items():
                         for mon in self.monsters:
                             if mon.mon_map_id == mon_map_id:
-                                try:
-                                    mon.is_alive = int(mon_condition["intState"]) > 0
-                                    mon.current_hp = int(mon_condition["intHP"])
-                                except:
-                                    pass
+                                mon.is_alive = int(mon_condition.get("intState", mon.is_alive)) > 0
+                                mon.current_hp = int(mon_condition.get("intHP", mon.current_hp))
                                 break
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
@@ -289,29 +286,25 @@ class Bot:
                 if data["bitSuccess"] == 1:
                     for loaded_shop in self.loaded_shop_datas:
                         for shop_item in loaded_shop.items:
-                            if str(shop_item.item_id) ==  str(data["ItemID"]):
-                                bought = {
-                                    "sName": normalize(shop_item.item_name),
+                            if str(shop_item.item_id) == str(data["ItemID"]):
+                                bought = ItemInventory({
+                                    "sName": shop_item.item_name,
                                     "ItemID": data["ItemID"],
                                     "CharItemID": data["CharItemID"],
                                     "iQty": data["iQty"]
-                                }
-                                is_added_to_invent = False
-                                for player_item in self.player.INVENTORY:
-                                    if str(player_item["ItemID"]) == str(bought["ItemID"]):
-                                        player_item["iQty"] += bought["iQty"]
-                                        is_added_to_invent = True
-                                        break
-                                if not is_added_to_invent:
+                                })
+                                if player_item := self.player.get_item_inventory_by_id(bought.item_id):
+                                    player_item.qty += bought.qty
+                                else:
                                     self.player.INVENTORY.append(bought)
                                 break
             elif cmd == "sellItem":
                 for item in self.player.INVENTORY:
-                    if int(item["CharItemID"]) == int(data["CharItemID"]):
+                    if int(item.char_item_id) == int(data["CharItemID"]):
                         if data["iQtyNow"] == 0:
-                            del item
+                            self.player.INVENTORY.remove(item)
                         else:
-                            item["iQty"] = data["iQtyNow"]
+                            item.qty = data["iQtyNow"]
                         break
             elif cmd == "addGoldExp":
                 self.player.GOLD += data["intGold"]
@@ -334,34 +327,27 @@ class Bot:
             elif cmd == "dropItem":
                 dropItems = data.get('items')
                 for itemDrop in dropItems.values():
-                    if itemDrop["sName"] in self.items_drop_whitelist:
-                        self.get_drop(self.user_id, itemDrop["ItemID"])
+                    itemDrop = ItemInventory(itemDrop)
+                    if itemDrop.item_name in [item.lower() for item in self.items_drop_whitelist]:
+                        self.get_drop(self.user_id, itemDrop.item_id)
                         self.player.INVENTORY.append(itemDrop)
                         break
             elif cmd == "addItems":
                 dropItems = data.get('items')
-                inventItemIds = [str(item["ItemID"]) for item in self.player.INVENTORY]
-                tempInventItemIds = [str(item["ItemID"]) for item in self.player.TEMPINVENTORY]
                 for itemId, dropItem in dropItems.items():
+                    dropItem = ItemInventory(dropItem)
                     # Item inventory
-                    if dropItem.get("CharItemID", None):
-                        if itemId in inventItemIds:
-                            for playerItem in self.player.INVENTORY:
-                                if str(playerItem["ItemID"]) == str(itemId):
-                                    playerItem["iQty"] = dropItem["iQtyNow"]
-                                    playerItem["CharItemID"] = dropItem["CharItemID"]
-                                    await self.check_registered_quest_completion(itemId)
-                                    break
+                    if dropItem.char_item_id:
+                        if playerItem := self.player.get_item_inventory_by_id(itemId):
+                            playerItem.qty = dropItem.qty_now
+                            playerItem.char_item_id = dropItem.char_item_id
+                            await self.check_registered_quest_completion(itemId)
                         else:
                             self.player.INVENTORY.append(dropItem)
                     # Item temp inventory
                     else:
-                        if itemId in tempInventItemIds:
-                            for playerItem in self.player.TEMPINVENTORY:
-                                if str(playerItem["ItemID"]) == str(itemId):
-                                    playerItem["iQty"] += dropItem["iQty"]
-                                    await self.check_registered_quest_completion(itemId, is_temp=True)
-                                    break
+                        if playerItem := self.player.get_item_temp_inventory_by_id(itemId):
+                            playerItem.qty += dropItem.qty
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
             elif cmd == "turnIn":
@@ -369,18 +355,16 @@ class Bot:
                 for s_item in sItems:
                     itemId = s_item.split(':')[0]
                     iQty = int(s_item.split(':')[1])
-                    for i, item in enumerate(self.player.TEMPINVENTORY):
-                        if str(item["ItemID"]) == itemId:
-                            if item["iQty"] - iQty == 0:
-                                del self.player.TEMPINVENTORY[i]
-                            else:
-                                item["iQty"] -= iQty
-                    for i, item in enumerate(self.player.INVENTORY):
-                        if str(item["ItemID"]) == itemId:
-                            if item["iQty"] - iQty == 0:
-                                del self.player.INVENTORY[i]
-                            else:
-                                item["iQty"] -= iQty
+                    if playerItem := self.player.get_item_inventory_by_id(itemId):
+                        if playerItem.qty - iQty == 0:
+                            self.player.INVENTORY.remove(playerItem)
+                        else:
+                            playerItem.qty -= iQty
+                    if playerTempItem := self.player.get_item_temp_inventory_by_id(itemId):
+                        if playerTempItem.qty - iQty == 0:
+                            self.player.INVENTORY.remove(playerTempItem)
+                        else:
+                            playerTempItem.qty -= iQty
             elif cmd == "event":
                 print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
                 if data["args"]["zoneSet"]  == "A":
@@ -437,6 +421,10 @@ class Bot:
             elif "You joined" in msg:
                 self.write_message(f"%xt%zm%retrieveUserDatas%{self.areaId}%{self.username_id}%")
                 self.is_joining_map = False
+            elif "warning" in msg:
+                msg = msg.split('%')
+                text = msg[4]
+                print(Fore.RED + text + Fore.WHITE)
             elif "respawnMon" in msg:
                 pass
             elif "chatm" in msg:
@@ -466,7 +454,9 @@ class Bot:
                 for registered_quest_id in self.registered_auto_quest_ids:
                     if self.can_turn_in_quest(registered_quest_id):
                         self.turn_in_quest(registered_quest_id)
-                    time.sleep(2)
+                        time.sleep(1)
+                        self.accept_quest(registered_quest_id)
+                    time.sleep(3)
             self.registered_quests_event.wait()
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
@@ -590,7 +580,7 @@ class Bot:
             },
         }
         # Get the class and its conditions
-        equipped_class = str(self.player.EQUIPPED["Class"]['sName'])
+        equipped_class = self.player.get_equipped_item(ItemType.CLASS)
         if equipped_class in conditions:
             condition = conditions[equipped_class]
             current_hp = self.player.CURRENT_HP
@@ -667,8 +657,7 @@ class Bot:
 
             item = self.player.get_item_inventory_by_id(required_item_id) or \
                 self.player.get_item_temp_inventory_by_id(required_item_id)
-
-            if not item or int(item["iQty"]) < int(required_qty):
+            if not item or int(item.qty) < int(required_qty):
                 return False
 
         return True
