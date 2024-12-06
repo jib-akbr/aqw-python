@@ -161,11 +161,10 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
-        if "slow down" in msg:
-            print(Fore.RED + msg + Fore.WHITE)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
         if "logout" in msg.lower():
+            print(msg)
             raise CustomError("LOGOUT")
 
         if self.is_valid_json(msg):
@@ -176,6 +175,7 @@ class Bot:
                 return
             cmd = data["cmd"]
             if cmd == "moveToArea":
+                uo_branch = data.get("uoBranch")
                 mon_branch = data.get("monBranch")
                 mon_def = data.get("mondef")
                 mon_map = data.get("monmap")
@@ -183,6 +183,10 @@ class Bot:
                 self.areaId = data["areaId"]
                 self.strMapName = data["strMapName"]
                 self.monsters = []
+                for i_uo_branch in uo_branch:
+                    if (i_uo_branch["uoName"] == self.player.USER.lower()):
+                        self.player.PAD = i_uo_branch["strPad"]
+                        self.player.CELL = i_uo_branch["strFrame"]
                 if mon_def and mon_branch and mon_map:
                     for i_mon_branch in mon_branch:
                         self.monsters.append(Monster(i_mon_branch))
@@ -357,7 +361,7 @@ class Bot:
                             playerItem.qty -= iQty
                     if playerTempItem := self.player.get_item_temp_inventory_by_id(itemId):
                         if playerTempItem.qty - iQty == 0:
-                            self.player.INVENTORY.remove(playerTempItem)
+                            self.player.TEMPINVENTORY.remove(playerTempItem)
                         else:
                             playerTempItem.qty -= iQty
             elif cmd == "event":

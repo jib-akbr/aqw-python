@@ -28,7 +28,7 @@ class UseSkillCmd(Command):
 
         if skill["tgt"] == "h": 
             priority_monsters_id = []
-            cell_monsters_id = [mon.mon_map_id for mon in bot.monsters if mon.frame == bot.player.CELL]
+            cell_monsters_id = [mon.mon_map_id for mon in bot.monsters if mon.frame == bot.player.CELL and mon.is_alive]
             final_ids = []
             if self.target_monsters != "*":
                 # Mapping priority_monsters_id
