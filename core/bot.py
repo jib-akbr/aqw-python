@@ -26,7 +26,8 @@ class Bot:
             cmdDelay: int = 1000,
             showLog: bool = True, 
             showDebug: bool = False,
-            showChat: bool = True
+            showChat: bool = True,
+            autoRelogin: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -34,11 +35,14 @@ class Bot:
         self.showDebug = showDebug
         self.showChat = showChat
         self.items_drop_whitelist = itemsDropWhiteList
+        self.auto_relogin = autoRelogin
+        
+        self.is_char_load_complete= False
+        self.is_joining_map = False
+        self.is_client_connected = False
         
         self.sleepUntil = 0
         self.player = None
-        self.is_chat_load_complete= False
-        self.is_joining_map = False
         self.cmds = []
         self.index = 0
         self.areaId = None
@@ -49,31 +53,24 @@ class Bot:
         self.password = ""
         self.server = ""
         self.server_info = None
-        self.is_client_connected = False
         self.client_socket = None
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
-        self.registered_quests_event = threading.Event()
-        self.register_quest_spammer = True
         
     def set_login_info(self, username, password, server):
         self.username = username
         self.password = password
         self.server = server
         
-    def start_bot(self):
+    async def start_bot(self):
         self.login(self.username, self.password, self.server)
         if self.server_info:
-            asyncio.run(self.connect_client())
-            if self.register_quest_spammer:
-                self.run_registered_quests()        
-            asyncio.run(self.run_commands())
+            await self.connect_client()      
+            asyncio.create_task(self.registered_quests_worker())  
+            await self.run_commands()
     
     def stop_bot(self):
-        self.player.BANK = []
-        self.player.INVENTORY = []
-        self.player.TEMPINVENTORY = []
         self.is_client_connected = False
         if self.client_socket:
             self.client_socket.close()
@@ -90,6 +87,21 @@ class Bot:
         self.player = Player(username, password)
         if self.player.getInfo():
             self.server_info = self.player.getServerInfo(server)
+            
+    async def relogin_and_restart(self):
+        self.stop_bot()
+        self.index = 0
+        self.is_char_load_complete = False
+        self.is_joining_map = False
+        self.loaded_quest_datas = []
+        self.loaded_shop_datas: List[Shop] = []
+        self.registered_auto_quest_ids = []
+        try:
+            await asyncio.sleep(10) # wait for 10 seconds
+            print("Restarting bot...")
+            await self.start_bot()
+        except Exception as e:
+            print(f"Error during restarting bot: {e}")
         
     async def connect_client(self):
         hostname = self.server_info[0] 
@@ -113,7 +125,7 @@ class Bot:
                     await self.handle_server_response(msg)
             # Skipping bot commands
             if self.sleepUntil > time.time():
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
                 continue
             else:
                 if self.player.ISDEAD:
@@ -123,7 +135,7 @@ class Bot:
                     self.player.ISDEAD = False
                     continue
             # Execute a command
-            if self.is_chat_load_complete:
+            if self.is_char_load_complete:
                 if self.is_joining_map:
                     continue
                 if self.index >= len(self.cmds):
@@ -134,6 +146,8 @@ class Bot:
                 if not cmd.skip_delay:
                     self.sleepUntil = time.time() + self.cmdDelay/1000
         print('BOT STOPPED\n')
+        if self.auto_relogin:
+            await self.relogin_and_restart()
         
     def print_commands(self):
         print("Index\tCommand")
@@ -161,11 +175,10 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
+        if "You received" in msg.lower():
+            print(Fore.MAGENTA + msg + Fore.WHITE)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
-        if "logout" in msg.lower():
-            print(msg)
-            raise CustomError("LOGOUT")
 
         if self.is_valid_json(msg):
             data = json.loads(msg)
@@ -208,7 +221,7 @@ class Bot:
                             self.player.GOLD = int(i["data"]["intGold"])
                         self.check_user_access_level(username, access_level)
                     if not self.player.BANK:
-                        print("Load bank and inventory...")
+                        # print("Load bank and inventory...")
                         self.player.loadBank()
                         self.write_message(f"%xt%zm%retrieveInventory%{self.areaId}%{self.username_id}%")
                 except Exception as e:
@@ -220,7 +233,7 @@ class Bot:
             elif cmd == "equipItem":
                 pass
             elif cmd == "loadInventoryBig":
-                self.is_chat_load_complete = True
+                self.is_char_load_complete = True
                 for item in data["items"]:
                     self.player.INVENTORY.append(ItemInventory(item))
                 self.player.FACTIONS = data.get("factions", [])
@@ -340,7 +353,7 @@ class Bot:
                         if playerItem := self.player.get_item_inventory_by_id(itemId):
                             playerItem.qty = dropItem.qty_now
                             playerItem.char_item_id = dropItem.char_item_id
-                            await self.check_registered_quest_completion(itemId)
+                            # await self.check_registered_quest_completion(itemId)
                         else:
                             self.player.INVENTORY.append(dropItem)
                     # Item temp inventory
@@ -369,7 +382,7 @@ class Bot:
                 if data["args"]["zoneSet"]  == "A":
                     if self.strMapName.lower() == "ultraspeaker":
                         self.walk_to(100, 321)
-                        time.sleep(0.5)
+                        await asyncio.sleep(0.5)
             elif cmd == "ccqr":
                 quest_id = data.get('QuestID', None)
                 s_name = data.get('sName', None)
@@ -399,19 +412,19 @@ class Bot:
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
-                return
             elif "joinOK" in msg:
                 self.extract_user_ids(msg)
-                return
             elif "userGone" in msg:
                 self.extract_remove_user(msg)
-                return
             elif "uER" in msg:
                 self.extract_new_user(msg)
                 root = ET.fromstring(msg)
                 newId = root.find(".//u").get("i")
                 msg = f"%xt%zm%retrieveUserData%{self.areaId}%{newId}%"
                 self.write_message(msg)
+            elif "logout" in msg:
+                print("Client logged out.")
+                self.is_client_connected = False
                 return
         elif msg.startswith("%") and msg.endswith("%"):
             if f"%xt%server%-1%Profanity filter On.%" in msg:
@@ -423,7 +436,7 @@ class Bot:
             elif "warning" in msg:
                 msg = msg.split('%')
                 text = msg[4]
-                print(Fore.RED + text + Fore.WHITE)
+                print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
             elif "respawnMon" in msg:
                 pass
             elif "chatm" in msg:
@@ -441,26 +454,18 @@ class Bot:
             elif f"%xt%uotls%-1%{self.player.USER}%afk:true%" in msg:
                 pass
     
-    # Spamming packet per interval
-    def run_registered_quests(self):
-        self.registered_quests_thread = threading.Thread(target=self.registered_quests_worker, daemon=True)
-        self.registered_quests_thread.start()
-    
-    def registered_quests_worker(self):
+    async def registered_quests_worker(self):
         print("Running registered quests...")
-        while True:
-            while self.is_client_connected:
-                for registered_quest_id in self.registered_auto_quest_ids:
-                    if self.can_turn_in_quest(registered_quest_id):
-                        self.turn_in_quest(registered_quest_id)
-                        time.sleep(1)
-                        self.accept_quest(registered_quest_id)
-                    time.sleep(3)
-            self.registered_quests_event.wait()
+        while self.is_client_connected:
+            for registered_quest_id in self.registered_auto_quest_ids:
+                if self.can_turn_in_quest(registered_quest_id):
+                    self.turn_in_quest(registered_quest_id)
+                    await asyncio.sleep(1)
+                    self.accept_quest(registered_quest_id)
+                await asyncio.sleep(3)
+        print("Stopping registered quests...")
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
-        if self.register_quest_spammer:
-            return
         for registered_quest_id in self.registered_auto_quest_ids:
             if self.can_turn_in_quest(registered_quest_id):
                 self.turn_in_quest(registered_quest_id)
@@ -661,6 +666,7 @@ class Bot:
         return True
 
     def reset_cmds(self):
+        self.index = 0
         self.cmds = []
         
     def add_cmd(self, cmd):
