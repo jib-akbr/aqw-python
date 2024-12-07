@@ -7,7 +7,7 @@ class IsNotInMapCmd(Command):
     def __init__(self, mapName: str):
         self.mapName = mapName
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         if(self.mapName.lower() == bot.strMapName.lower()):
             bot.index += 1
         

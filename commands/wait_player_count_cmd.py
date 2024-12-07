@@ -6,7 +6,7 @@ class WaitPlayerCountCmd(Command):
     def __init__(self, playerCount: int):
         self.playerCount = playerCount
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         if len(bot.user_ids) < self.playerCount:
             bot.index -= 1
         

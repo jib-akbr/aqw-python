@@ -7,7 +7,7 @@ class JumpCmd(Command):
         self.cell = cell
         self.pad = pad
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         bot.jump_cell(self.cell, self.pad)
         
     def to_string(self):

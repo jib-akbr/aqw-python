@@ -57,6 +57,7 @@ class Bot:
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
+        self.is_register_quest_task_running = False
         
     def set_login_info(self, username, password, server):
         self.username = username
@@ -66,9 +67,11 @@ class Bot:
     async def start_bot(self):
         self.login(self.username, self.password, self.server)
         if self.server_info:
-            await self.connect_client()      
-            asyncio.create_task(self.registered_quests_worker())  
+            await self.connect_client()
             await self.run_commands()
+            
+    def run_register_quest_task(self):
+        asyncio.create_task(self.register_quest_task())  
     
     def stop_bot(self):
         self.is_client_connected = False
@@ -93,12 +96,13 @@ class Bot:
         self.index = 0
         self.is_char_load_complete = False
         self.is_joining_map = False
+        self.is_register_quest_task_running = False
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
         try:
-            await asyncio.sleep(10) # wait for 10 seconds
-            print("Restarting bot...")
+            print("Restarting bot in 10 secs...")
+            await asyncio.sleep(10)
             await self.start_bot()
         except Exception as e:
             print(f"Error during restarting bot: {e}")
@@ -118,6 +122,9 @@ class Bot:
             # self.print_commands()
             print("Running bot commands...")
         while self.is_client_connected:
+            if self.registered_auto_quest_ids and not self.is_register_quest_task_running:
+                self.run_register_quest_task()
+                self.is_register_quest_task_running = True
             messages = self.read_batch(self.client_socket)
             # Handle packets from server
             if messages:
@@ -141,7 +148,7 @@ class Bot:
                 if self.index >= len(self.cmds):
                     self.index = 0
                 cmd = self.cmds[self.index]
-                self.handle_command(cmd)           
+                await self.handle_command(cmd)
                 self.index += 1
                 if not cmd.skip_delay:
                     self.sleepUntil = time.time() + self.cmdDelay/1000
@@ -156,7 +163,7 @@ class Bot:
             print(cmd.to_string())
         print("------------------------------")
 
-    def handle_command(self, command):  
+    async def handle_command(self, command):  
         if self.showLog:
             cmd_string = command.to_string()
             if cmd_string:
@@ -165,7 +172,7 @@ class Bot:
                     print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
                 else:
                     print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}" + Fore.WHITE)
-        command.execute(self)
+        await command.execute(self)
         self.doSleep(self.cmdDelay)
         return
     
@@ -454,7 +461,7 @@ class Bot:
             elif f"%xt%uotls%-1%{self.player.USER}%afk:true%" in msg:
                 pass
     
-    async def registered_quests_worker(self):
+    async def register_quest_task(self):
         print("Running registered quests...")
         while self.is_client_connected:
             for registered_quest_id in self.registered_auto_quest_ids:
@@ -462,7 +469,8 @@ class Bot:
                     self.turn_in_quest(registered_quest_id)
                     await asyncio.sleep(1)
                     self.accept_quest(registered_quest_id)
-                await asyncio.sleep(3)
+                await asyncio.sleep(2)
+            await asyncio.sleep(1)
         print("Stopping registered quests...")
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
@@ -621,10 +629,10 @@ class Bot:
                 self.user_ids.remove(i)
                 break
         
-    def ensure_leave_from_combat(self, sleep_ms: int = 2000):
+    async def ensure_leave_from_combat(self, sleep_ms: int = 2000):
         if self.player.IS_IN_COMBAT:
             self.jump_cell(self.player.CELL, self.player.PAD)
-            time.sleep(sleep_ms/1000)
+            asyncio.sleep(sleep_ms/1000)
         
     def jump_cell(self, cell, pad):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"

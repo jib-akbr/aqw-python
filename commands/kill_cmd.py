@@ -7,7 +7,7 @@ class KillCmd(Command):
     def __init__(self, monsterName: []):
         self.monsterName = monsterName
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         pass
         
     def to_string(self):

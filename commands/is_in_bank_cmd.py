@@ -9,7 +9,7 @@ class IsInBankCmd(Command):
         self.itemQty = itemQty
         self.operator = operator
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         inBank = bot.player.isInBank(self.itemName, self.itemQty, self.operator)
         if(inBank == False):
             bot.index += 1

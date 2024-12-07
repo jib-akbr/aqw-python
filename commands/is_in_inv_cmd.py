@@ -10,7 +10,7 @@ class IsInInvCmd(Command):
         self.operator = operator
         self.isTemp = isTemp
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         inInv = bot.player.isInInventory(self.itemName, self.itemQty, self.operator, self.isTemp)
         if(inInv == False):
             bot.index += 1

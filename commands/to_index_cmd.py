@@ -7,7 +7,7 @@ class ToIndexCmd(Command):
     def __init__(self, value: int):
         self.value = value
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         bot.index = self.value
         
     def to_string(self):

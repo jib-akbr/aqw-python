@@ -16,7 +16,7 @@ class UseSkillCmd(Command):
             self.target_monsters = target_monsters
         return UseSkillCmd(index, self.target_monsters)
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         if not bot.player.canUseSkill(int(self.index)) and not bot.canuseskill:
             bot.debug(f"Skill {self.index} not ready yet")
             return
