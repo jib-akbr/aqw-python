@@ -2,6 +2,7 @@ from core.bot import Bot
 import commands as cmd
 from templates.attack import attack_monster
 from templates.general import un_bank_items
+import asyncio
 
 # Initialize variables
 drop_whitelist = [
@@ -41,4 +42,4 @@ b.add_cmds([
     ])
 
 # Start bot
-b.start_bot()
+asyncio.run(b.start_bot())

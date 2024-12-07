@@ -4,6 +4,7 @@ from templates.hunt import hunt_item_cmds, hunt_monster_quest_temp_item
 from templates.story import do_story_quest, QuestItemReq, QuestMapItemReq, QuestSingleReq
 from templates.general import accept_quest_bulk
 import commands as cmd
+import asyncio
 
 b = Bot(
     roomNumber=None, 
@@ -122,4 +123,4 @@ b.add_cmds([
     cmd.StopBotCmd("DONE STORY - Dawn Sanctum")
 ])
 
-b.start_bot()
+asyncio.run(b.start_bot())

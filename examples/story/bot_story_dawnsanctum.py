@@ -2,7 +2,7 @@ from core.bot import Bot
 from templates import attack
 from templates.hunt import hunt_item_cmds, hunt_monster_quest_temp_item
 import commands as cmd
-
+import asyncio
 
 def makeLabelStoppingQuest(questid):
     return f"STOPPING QUEST {questid}"
@@ -164,5 +164,4 @@ b.add_cmds([
 ])
 
 
-
-b.start_bot()
+asyncio.run(b.start_bot())

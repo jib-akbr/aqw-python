@@ -1,6 +1,7 @@
 from core.bot import Bot
 import commands as cmd
 from templates import attack
+import asyncio
 
 b = Bot(
     roomNumber=9909,
@@ -42,4 +43,4 @@ b.add_cmds([
 )
 
 
-b.start_bot()
+asyncio.run(b.start_bot())
