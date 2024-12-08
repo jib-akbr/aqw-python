@@ -30,7 +30,7 @@ class Bot:
             showDebug: bool = False,
             showChat: bool = True,
             autoRelogin: bool = False,
-            followPlayer: str = None
+            followPlayer: str = ""
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -193,8 +193,6 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
-        if "You received" in msg.lower():
-            print(Fore.MAGENTA + msg + Fore.WHITE)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
 
@@ -447,6 +445,8 @@ class Bot:
                 self.is_client_connected = False
                 return
         elif msg.startswith("%") and msg.endswith("%"):
+            if f"%server%" in msg:
+                print(Fore.MAGENTA + f"{msg.split('%')[4]}" + Fore.RESET)
             if f"%xt%server%-1%Profanity filter On.%" in msg:
                 self.write_message(f"%xt%zm%firstJoin%1%")
                 self.write_message(f"%xt%zm%cmd%1%ignoreList%$clearAll%")
