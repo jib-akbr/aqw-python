@@ -1,6 +1,7 @@
 import socket
 from core.player import Player
 from core.utils import normalize
+import re
 import json
 import time
 from typing import List
@@ -16,6 +17,7 @@ from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType
+from handlers import register_quest_task
 
 class Bot:
 
@@ -27,7 +29,8 @@ class Bot:
             showLog: bool = True, 
             showDebug: bool = False,
             showChat: bool = True,
-            autoRelogin: bool = False
+            autoRelogin: bool = False,
+            followPlayer: str = None
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -36,6 +39,7 @@ class Bot:
         self.showChat = showChat
         self.items_drop_whitelist = itemsDropWhiteList
         self.auto_relogin = autoRelogin
+        self.follow_player = followPlayer
         
         self.is_char_load_complete= False
         self.is_joining_map = False
@@ -54,10 +58,13 @@ class Bot:
         self.server = ""
         self.server_info = None
         self.client_socket = None
+        self.users_id_in_cell = []
+        self.users_name_in_cell = []
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
         self.is_register_quest_task_running = False
+        self.followed_player_cell = None
         
     def set_login_info(self, username, password, server):
         self.username = username
@@ -71,7 +78,7 @@ class Bot:
             await self.run_commands()
             
     def run_register_quest_task(self):
-        asyncio.create_task(self.register_quest_task())  
+        asyncio.create_task(register_quest_task(self))  
     
     def stop_bot(self):
         self.is_client_connected = False
@@ -145,6 +152,10 @@ class Bot:
             if self.is_char_load_complete:
                 if self.is_joining_map:
                     continue
+                if self.follow_player and self.followed_player_cell != self.player.CELL:
+                    await self.goto_player(self.follow_player)
+                    await asyncio.sleep(1)
+                    continue
                 if self.index >= len(self.cmds):
                     self.index = 0
                 cmd = self.cmds[self.index]
@@ -163,7 +174,7 @@ class Bot:
             print(cmd.to_string())
         print("------------------------------")
 
-    async def handle_command(self, command):  
+    async def handle_command(self, command):
         if self.showLog:
             cmd_string = command.to_string()
             if cmd_string:
@@ -207,6 +218,8 @@ class Bot:
                     if (i_uo_branch["uoName"] == self.player.USER.lower()):
                         self.player.PAD = i_uo_branch["strPad"]
                         self.player.CELL = i_uo_branch["strFrame"]
+                    if (i_uo_branch["uoName"] == self.follow_player.lower()):
+                        self.followed_player_cell = i_uo_branch["strFrame"]
                 if mon_def and mon_branch and mon_map:
                     for i_mon_branch in mon_branch:
                         self.monsters.append(Monster(i_mon_branch))
@@ -444,6 +457,25 @@ class Bot:
                 msg = msg.split('%')
                 text = msg[4]
                 print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
+            elif "exitArea" in msg:
+                if msg.split('%')[5].lower() == self.follow_player.lower():
+                    self.followed_player_cell = None
+                    await self.ensure_leave_from_combat(always=True)
+            elif "uotls" in msg:
+                username = msg.split('%')[4]
+                if username == self.follow_player and "strPad" in msg and "strFrame" in msg:
+                    movement = msg.split('%')[5]
+                    cell = None
+                    pad = None
+                    for m in movement.split(','):
+                        key, value = m.split(':')
+                        if key == "strFrame":
+                            cell = value
+                        elif key == "strPad":
+                            pad = value
+                    if cell != self.player.CELL:
+                        self.followed_player_cell = cell
+                        self.jump_cell(cell, pad)
             elif "respawnMon" in msg:
                 pass
             elif "chatm" in msg:
@@ -460,18 +492,6 @@ class Bot:
                     print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {sender} [WHISPER] : {text}" + Fore.WHITE)
             elif f"%xt%uotls%-1%{self.player.USER}%afk:true%" in msg:
                 pass
-    
-    async def register_quest_task(self):
-        print("Running registered quests...")
-        while self.is_client_connected:
-            for registered_quest_id in self.registered_auto_quest_ids:
-                if self.can_turn_in_quest(registered_quest_id):
-                    self.turn_in_quest(registered_quest_id)
-                    await asyncio.sleep(1)
-                    self.accept_quest(registered_quest_id)
-                await asyncio.sleep(2)
-            await asyncio.sleep(1)
-        print("Stopping registered quests...")
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
         for registered_quest_id in self.registered_auto_quest_ids:
@@ -532,6 +552,9 @@ class Bot:
             return True
         except ElementTree.ParseError:
             return False
+    
+    async def goto_player(self, player_name):
+        self.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
         
     def get_drop(self, user_id, item_id):
         packet = f"%xt%zm%getDrop%{user_id}%{item_id}%"
@@ -554,10 +577,10 @@ class Bot:
         self.target = [f"i1>p:{i}" for i in monsterid][:targetMax]
         self.write_message(f"%xt%zm%gar%1%0%i1>p:{self.user_id}%{potion_id}%wvz%")
 
-    def use_skill_to_monster(self, skill, monsterid, max_target):
-        if not self.check_is_skill_safe(skill):
+    def use_skill_to_monster(self, skill, monsters_id, max_target):
+        if not self.check_is_skill_safe(skill) or not monsters_id:
             return
-        self.target = [f"a{skill}>m:{i}" for i in monsterid][:max_target]
+        self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
@@ -629,10 +652,10 @@ class Bot:
                 self.user_ids.remove(i)
                 break
         
-    async def ensure_leave_from_combat(self, sleep_ms: int = 2000):
-        if self.player.IS_IN_COMBAT:
+    async def ensure_leave_from_combat(self, sleep_ms: int = 2000, always: bool = False):
+        if self.player.IS_IN_COMBAT or always:
             self.jump_cell(self.player.CELL, self.player.PAD)
-            asyncio.sleep(sleep_ms/1000)
+            await asyncio.sleep(sleep_ms/1000)
         
     def jump_cell(self, cell, pad):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"
