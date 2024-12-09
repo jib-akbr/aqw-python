@@ -9,7 +9,7 @@ class IsInInvCmd(Command):
         self.itemQty = itemQty
         self.operator = operator
         self.isTemp = isTemp
-        self.inInv = []
+        self.inInv = [False, 0]
     
     async def execute(self, bot: Bot):
         self.inInv = bot.player.isInInventory(self.itemName, self.itemQty, self.operator, self.isTemp)

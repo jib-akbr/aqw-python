@@ -193,6 +193,7 @@ class Bot:
     def check_user_access_level(self, username: str, access_level: int):
         if access_level >= 30:
             print(Fore.RED + f"You met a {username}, a staff!")
+            self.auto_relogin = False
             self.stop_bot()
 
     async def handle_server_response(self, msg):
