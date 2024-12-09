@@ -175,15 +175,18 @@ class Bot:
         print("------------------------------")
 
     async def handle_command(self, command):
+        if command.skip_delay:
+            await command.execute(self)
         if self.showLog:
             cmd_string = command.to_string()
             if cmd_string:
                 cmd_string = cmd_string.split(':')
                 if len(cmd_string) > 1:
-                    print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
+                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
                 else:
-                    print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}" + Fore.WHITE)
-        await command.execute(self)
+                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.WHITE)
+        if not command.skip_delay:
+            await command.execute(self)
         self.doSleep(self.cmdDelay)
         return
     
@@ -323,7 +326,8 @@ class Bot:
                                     "CharItemID": data["CharItemID"],
                                     "iQty": data["iQty"]
                                 })
-                                if player_item := self.player.get_item_inventory_by_id(bought.item_id):
+                                player_item = self.player.get_item_inventory_by_id(bought.item_id)
+                                if player_item:
                                     player_item.qty += bought.qty
                                 else:
                                     self.player.INVENTORY.append(bought)
@@ -368,7 +372,8 @@ class Bot:
                     dropItem = ItemInventory(dropItem)
                     # Item inventory
                     if dropItem.char_item_id:
-                        if playerItem := self.player.get_item_inventory_by_id(itemId):
+                        playerItem = self.player.get_item_inventory_by_id(itemId)
+                        if playerItem:
                             playerItem.qty = dropItem.qty_now
                             playerItem.char_item_id = dropItem.char_item_id
                             # await self.check_registered_quest_completion(itemId)
@@ -376,7 +381,8 @@ class Bot:
                             self.player.INVENTORY.append(dropItem)
                     # Item temp inventory
                     else:
-                        if playerItem := self.player.get_item_temp_inventory_by_id(itemId):
+                        playerItem = self.player.get_item_temp_inventory_by_id(itemId)
+                        if playerItem:
                             playerItem.qty += dropItem.qty
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
@@ -385,12 +391,14 @@ class Bot:
                 for s_item in sItems:
                     itemId = s_item.split(':')[0]
                     iQty = int(s_item.split(':')[1])
-                    if playerItem := self.player.get_item_inventory_by_id(itemId):
+                    playerItem = self.player.get_item_inventory_by_id(itemId)
+                    if playerItem:
                         if playerItem.qty - iQty == 0:
                             self.player.INVENTORY.remove(playerItem)
                         else:
                             playerItem.qty -= iQty
-                    if playerTempItem := self.player.get_item_temp_inventory_by_id(itemId):
+                    playerTempItem = self.player.get_item_temp_inventory_by_id(itemId)
+                    if playerTempItem:
                         if playerTempItem.qty - iQty == 0:
                             self.player.TEMPINVENTORY.remove(playerTempItem)
                         else:
@@ -446,7 +454,7 @@ class Bot:
                 return
         elif msg.startswith("%") and msg.endswith("%"):
             if f"%server%" in msg:
-                print(Fore.MAGENTA + f"{msg.split('%')[4]}" + Fore.RESET)
+                print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {msg.split('%')[4]}" + Fore.RESET)
             if f"%xt%server%-1%Profanity filter On.%" in msg:
                 self.write_message(f"%xt%zm%firstJoin%1%")
                 self.write_message(f"%xt%zm%cmd%1%ignoreList%$clearAll%")

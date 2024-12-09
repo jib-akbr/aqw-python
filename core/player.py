@@ -138,17 +138,16 @@ class Player:
                 return item
         return None
 
-    def isInBank(self, itemName: str, qty: int = 1, operator: str = ">=") -> bool:
+    def isInBank(self, itemName: str, qty: int = 1, operator: str = ">="):
         inv = self.BANK
         invItemQty = 0
         for item in inv:
             if item.item_name == normalize(itemName):
                 invItemQty = item.qty
                 break
-        print(f"actual: {itemName} [{invItemQty}]")
-        return checkOperator(invItemQty, qty, operator)
+        return [checkOperator(invItemQty, qty, operator), invItemQty]
     
-    def isInInventory(self, itemName: str, qty: int = 1, operator: str = ">=", isTemp: bool = False) -> bool:
+    def isInInventory(self, itemName: str, qty: int = 1, operator: str = ">=", isTemp: bool = False):
         inv = self.INVENTORY
         invItemQty = 0
         if isTemp:
@@ -157,5 +156,4 @@ class Player:
             if item.item_name == normalize(itemName):
                 invItemQty = item.qty
                 break
-        print(f"actual: {itemName} [{invItemQty}]")
-        return checkOperator(invItemQty, qty, operator)
+        return [checkOperator(invItemQty, qty, operator), invItemQty]

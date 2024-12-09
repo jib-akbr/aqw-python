@@ -25,7 +25,7 @@ class BankToInvCmd(Command):
                 if itemBank.item_name == item.item_name:
                     bot.player.BANK.remove(itemBank)
                     break
-            asyncio.sleep(1)
+            await asyncio.sleep(1)
         
     def to_string(self):
         return f"Bank to inv : {self.itemName}"

@@ -9,11 +9,12 @@ class IsInInvCmd(Command):
         self.itemQty = itemQty
         self.operator = operator
         self.isTemp = isTemp
+        self.inInv = []
     
     async def execute(self, bot: Bot):
-        inInv = bot.player.isInInventory(self.itemName, self.itemQty, self.operator, self.isTemp)
-        if(inInv == False):
+        self.inInv = bot.player.isInInventory(self.itemName, self.itemQty, self.operator, self.isTemp)
+        if(self.inInv[0] == False):
             bot.index += 1
         
     def to_string(self):
-        return f"Is in inv : {'[Temp]' * self.isTemp} {self.itemName} {self.operator} {self.itemQty} "
+        return f"Is in inv : {'[Temp]' * self.isTemp} {self.itemName} {self.inInv[1]} {self.operator} {self.itemQty} "

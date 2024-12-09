@@ -19,7 +19,7 @@ class EquipItemCmd(Command):
                 is_equipped = True
                 s_type = item.s_type
                 item.is_equipped = is_equipped
-                asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)
                 break
         # Update unequip previous item
         if is_equipped and s_type:

@@ -16,7 +16,7 @@ class EquipScrollCmd(Command):
             if item.item_name.lower() == self.item_name.lower():
                 packet = f"%xt%zm%geia%%{bot.areaId}%{self.item_type}%{item.s_meta}%{item.item_id}%"
                 bot.write_message(packet)
-                asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)
                 break
         
     def to_string(self):
