@@ -133,21 +133,18 @@ class Bot:
                 self.run_register_quest_task()
                 self.is_register_quest_task_running = True
             messages = self.read_batch(self.client_socket)
-            # Handle packets from server
             if messages:
                 for msg in messages:
                     await self.handle_server_response(msg)
-            # Skipping bot commands
             if self.sleepUntil > time.time():
                 await asyncio.sleep(0.1)
                 continue
-            else:
-                if self.player.ISDEAD:
-                    self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
-                    self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
-                    self.jump_cell(self.player.CELL, self.player.PAD)
-                    self.player.ISDEAD = False
-                    continue
+            if self.player.ISDEAD:
+                self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
+                self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
+                self.jump_cell(self.player.CELL, self.player.PAD)
+                self.player.ISDEAD = False
+                continue
             # Execute a command
             if self.is_char_load_complete:
                 if self.is_joining_map:
@@ -187,7 +184,6 @@ class Bot:
                     print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.WHITE)
         if not command.skip_delay:
             await command.execute(self)
-        self.doSleep(self.cmdDelay)
         return
     
     def check_user_access_level(self, username: str, access_level: int):
@@ -212,9 +208,9 @@ class Bot:
                 mon_branch = data.get("monBranch")
                 mon_def = data.get("mondef")
                 mon_map = data.get("monmap")
-                self.areaName = data["areaName"]
+                self.areaName = data["areaName"] #"yulgar-99999"
                 self.areaId = data["areaId"]
-                self.strMapName = data["strMapName"]
+                self.strMapName = data["strMapName"] #"yulgar"
                 self.monsters = []
                 for i_uo_branch in uo_branch:
                     if (i_uo_branch["uoName"] == self.player.USER.lower()):
@@ -602,22 +598,22 @@ class Bot:
         
     def check_is_skill_safe(self, skill: int):
         conditions = {
-            "Void Highlord": {
+            "void highlord": {
                 "hp_threshold": 50, # in percentage of current hp from max hp
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "Scarlet Sorceress": {
+            "scarlet sorceress": {
                 "hp_threshold": 50,
                 "skills_to_check": [1, 4],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "Dragon of Time": {
+            "dragon of time": {
                 "hp_threshold": 40,
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "ArchPaladin": {
+            "archpaladin": {
                 "hp_threshold": 40,
                 "skills_to_check": [3],
                 "condition": lambda hp, threshold: hp > threshold
@@ -625,13 +621,14 @@ class Bot:
         }
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)
-        if equipped_class in conditions:
-            condition = conditions[equipped_class]
-            current_hp = self.player.CURRENT_HP
-            max_hp = self.player.MAX_HP
-            # Check if the current conditions match
-            if skill in condition["skills_to_check"] and condition["condition"]((current_hp / max_hp) * 100, condition["hp_threshold"]):
-                return False
+        if equipped_class:
+            if equipped_class.item_name in conditions:
+                condition = conditions[equipped_class.item_name]
+                current_hp = self.player.CURRENT_HP
+                max_hp = self.player.MAX_HP
+                # Check if the current conditions match
+                if skill in condition["skills_to_check"] and condition["condition"]((current_hp / max_hp) * 100, condition["hp_threshold"]):
+                    return False
         return True
 
     def doSleep(self, sleepms):

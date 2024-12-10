@@ -37,7 +37,7 @@ class Player:
         self.CURRENT_HP = 9999
         self.IS_IN_COMBAT = False
 
-    def getInfo(self) -> dict:
+    def getInfo(self):
         url = "https://game.aq.com/game/api/login/now?"
 
         data = {
@@ -82,13 +82,13 @@ class Player:
         for item in response.json():
             self.BANK.append(ItemInventory(item))
     
-    def getServerInfo(self, serverName) -> list[str, int]:
+    def getServerInfo(self, serverName):
         for server in self.SERVERS:
             if server["sName"].lower() == serverName.lower():
                 return [server["sIP"], server["iPort"]]
         return ["", 0]
     
-    def canUseSkill(self, skillNumber) -> bool:
+    def canUseSkill(self, skillNumber):
         skill = self.SKILLUSED.get(skillNumber)
         skillDetail = self.SKILLS[skillNumber]
         if skill:
@@ -100,7 +100,7 @@ class Player:
 
     def updateTime(self, skillNumber):
         skillDetail = self.SKILLS[skillNumber]
-        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) * (1 - self.CDREDUCTION))
+        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) + 2000)
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:
