@@ -45,7 +45,7 @@ class Bot:
         self.is_joining_map = False
         self.is_client_connected = False
         
-        self.sleepUntil = 0
+        self.sleep_ms = 0
         self.player = None
         self.cmds = []
         self.index = 0
@@ -136,9 +136,8 @@ class Bot:
             if messages:
                 for msg in messages:
                     await self.handle_server_response(msg)
-            if self.sleepUntil > time.time():
-                await asyncio.sleep(0.1)
-                continue
+            await asyncio.sleep(self.sleep_ms)
+            self.sleep_ms = 0
             if self.player.ISDEAD:
                 self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
                 self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
@@ -152,14 +151,12 @@ class Bot:
                 if self.follow_player and self.followed_player_cell != self.player.CELL:
                     await self.goto_player(self.follow_player)
                     await asyncio.sleep(1)
-                    continue
+                    continue                
                 if self.index >= len(self.cmds):
-                    self.index = 0
+                    self.index = 0                
                 cmd = self.cmds[self.index]
                 await self.handle_command(cmd)
                 self.index += 1
-                if not cmd.skip_delay:
-                    self.sleepUntil = time.time() + self.cmdDelay/1000
         print('BOT STOPPED\n')
         if self.auto_relogin:
             await self.relogin_and_restart()
@@ -184,6 +181,7 @@ class Bot:
                     print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.WHITE)
         if not command.skip_delay:
             await command.execute(self)
+        await asyncio.sleep(self.cmdDelay/1000)
         return
     
     def check_user_access_level(self, username: str, access_level: int):
@@ -306,7 +304,7 @@ class Bot:
                 if int(data["userID"]) == self.player.LOGINUSERID:
                     print(Fore.RED + "DEATH" + Fore.WHITE)
                     self.player.ISDEAD = True
-                    self.doSleep(11000)
+                    self.do_sleep(11000)
             elif cmd == "getQuests":
                 for quest_id, quest_data in data.get("quests").items():
                     self.loaded_quest_datas.append(quest_data)
@@ -431,7 +429,7 @@ class Bot:
                     loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
                     if not str(quest_id) in str(loaded_quest_ids):
                         self.write_message(f"%xt%zm%getQuests%{self.areaId}%{quest_id}%")
-                        self.doSleep(500)
+                        self.do_sleep(500)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
@@ -567,12 +565,12 @@ class Bot:
     
     def accept_quest(self, quest_id: int):
         self.write_message(f"%xt%zm%acceptQuest%{self.areaId}%{quest_id}%")
-        self.doSleep(500)
+        self.do_sleep(500)
         
     def turn_in_quest(self, quest_id: int, item_id: int = -1):
         packet = f"%xt%zm%tryQuestComplete%{self.areaId}%{quest_id}%{item_id}%false%1%wvz%"
         self.write_message(packet)
-        self.doSleep(500)
+        self.do_sleep(500)
 
     def use_scroll(self, monsterid, max_target, scroll_id):
         self.target = [f"i1>m:{i}" for i in monsterid][:max_target]
@@ -631,8 +629,8 @@ class Bot:
                     return False
         return True
 
-    def doSleep(self, sleepms):
-        self.sleepUntil = time.time() + int(sleepms)/1000.0
+    def do_sleep(self, sleep_ms: int):
+        self.sleep_ms = sleep_ms/1000
 
     def extract_user_ids(self, xml_message: str):
         root = ET.fromstring(xml_message)
