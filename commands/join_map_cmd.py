@@ -8,6 +8,8 @@ class JoinMapCmd(Command):
         self.roomNumber = roomNumber
     
     async def execute(self, bot: Bot):
+        if bot.strMapName.lower() == self.mapName.lower():
+            return
         bot.is_joining_map = True
         await bot.ensure_leave_from_combat(always=True)
         

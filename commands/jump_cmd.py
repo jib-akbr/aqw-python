@@ -8,7 +8,8 @@ class JumpCmd(Command):
         self.pad = pad
     
     async def execute(self, bot: Bot):
-        bot.jump_cell(self.cell, self.pad)
+        if bot.player.CELL.lower() != self.cell or bot.player.PAD.lower() != self.pad:
+            bot.jump_cell(self.cell, self.pad)
         
     def to_string(self):
         return f"Jump : {self.cell} {self.pad}"
