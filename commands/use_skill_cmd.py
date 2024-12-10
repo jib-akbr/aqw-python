@@ -34,10 +34,18 @@ class UseSkillCmd(Command):
                 # Mapping priority_monsters_id
                 for target_monster in self.target_monsters.split(','):
                     for monster in bot.monsters:
-                        if monster.mon_name.lower() == target_monster.lower() \
-                                and monster.frame == bot.player.CELL \
-                                and monster.is_alive:
-                            priority_monsters_id.append(monster.mon_map_id)
+                        if target_monster.startswith('id.'):
+                            target_monster_id = target_monster.split('.')[1]
+                            if monster.mon_map_id == target_monster_id \
+                                    and monster.frame == bot.player.CELL \
+                                    and monster.is_alive:
+                                priority_monsters_id.append(monster.mon_map_id)
+                            break
+                        else:
+                            if monster.mon_name.lower() == target_monster.lower() \
+                                    and monster.frame == bot.player.CELL \
+                                    and monster.is_alive:
+                                priority_monsters_id.append(monster.mon_map_id)
                             break
                 # Check if the first index is one of the priority targets
                 if len(priority_monsters_id) > 0:
