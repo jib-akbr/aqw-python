@@ -100,7 +100,7 @@ class Player:
 
     def updateTime(self, skillNumber):
         skillDetail = self.SKILLS[skillNumber]
-        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) + 2000)
+        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) + 1500)
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:

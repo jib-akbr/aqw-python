@@ -3,6 +3,7 @@ from abstracts.command import Command
 import asyncio
 
 class SleepCmd(Command):
+    skip_delay = True
     
     def __init__(self, milliseconds: int):
         self.milliseconds = milliseconds
