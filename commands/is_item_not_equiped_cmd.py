@@ -7,7 +7,7 @@ class IsItemNotEquipedCmd(Command):
     def __init__(self, item_name: str):
         self.item_name = item_name
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         item = bot.player.get_item_inventory(self.item_name)
         if not item or item.is_equipped:
             bot.index += 1

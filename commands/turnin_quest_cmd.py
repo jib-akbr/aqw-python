@@ -8,7 +8,7 @@ class TurnInQuestCmd(Command):
         self.quest_id = quest_id
         self.item_id = item_id
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         bot.turn_in_quest(self.quest_id, self.item_id)
         
     def to_string(self):

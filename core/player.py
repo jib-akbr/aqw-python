@@ -37,7 +37,7 @@ class Player:
         self.CURRENT_HP = 9999
         self.IS_IN_COMBAT = False
 
-    def getInfo(self) -> dict:
+    def getInfo(self):
         url = "https://game.aq.com/game/api/login/now?"
 
         data = {
@@ -82,13 +82,13 @@ class Player:
         for item in response.json():
             self.BANK.append(ItemInventory(item))
     
-    def getServerInfo(self, serverName) -> list[str, int]:
+    def getServerInfo(self, serverName):
         for server in self.SERVERS:
             if server["sName"].lower() == serverName.lower():
                 return [server["sIP"], server["iPort"]]
         return ["", 0]
     
-    def canUseSkill(self, skillNumber) -> bool:
+    def canUseSkill(self, skillNumber):
         skill = self.SKILLUSED.get(skillNumber)
         skillDetail = self.SKILLS[skillNumber]
         if skill:
@@ -100,7 +100,7 @@ class Player:
 
     def updateTime(self, skillNumber):
         skillDetail = self.SKILLS[skillNumber]
-        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) * (1 - self.CDREDUCTION))
+        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) + 1500)
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:
@@ -138,17 +138,16 @@ class Player:
                 return item
         return None
 
-    def isInBank(self, itemName: str, qty: int = 1, operator: str = ">=") -> bool:
+    def isInBank(self, itemName: str, qty: int = 1, operator: str = ">="):
         inv = self.BANK
         invItemQty = 0
         for item in inv:
             if item.item_name == normalize(itemName):
                 invItemQty = item.qty
                 break
-        print(f"actual: {itemName} [{invItemQty}]")
-        return checkOperator(invItemQty, qty, operator)
+        return [checkOperator(invItemQty, qty, operator), invItemQty]
     
-    def isInInventory(self, itemName: str, qty: int = 1, operator: str = ">=", isTemp: bool = False) -> bool:
+    def isInInventory(self, itemName: str, qty: int = 1, operator: str = ">=", isTemp: bool = False):
         inv = self.INVENTORY
         invItemQty = 0
         if isTemp:
@@ -157,5 +156,4 @@ class Player:
             if item.item_name == normalize(itemName):
                 invItemQty = item.qty
                 break
-        print(f"actual: {itemName} [{invItemQty}]")
-        return checkOperator(invItemQty, qty, operator)
+        return [checkOperator(invItemQty, qty, operator), invItemQty]

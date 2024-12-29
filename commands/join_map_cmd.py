@@ -7,9 +7,11 @@ class JoinMapCmd(Command):
         self.mapName = mapName
         self.roomNumber = roomNumber
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
+        if bot.strMapName.lower() == self.mapName.lower():
+            return
         bot.is_joining_map = True
-        bot.ensure_leave_from_combat()
+        await bot.ensure_leave_from_combat(always=True)
         
         if self.roomNumber != None:
             msg = f"%xt%zm%cmd%1%tfer%{bot.player.USER}%{self.mapName}-{self.roomNumber}%"

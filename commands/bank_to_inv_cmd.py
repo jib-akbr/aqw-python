@@ -1,13 +1,13 @@
 from core.bot import Bot
 from abstracts.command import Command
-import time
+import asyncio
 
 class BankToInvCmd(Command):
     
     def __init__(self, itemName: str):
         self.itemName = itemName
             
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         item = bot.player.get_item_bank(self.itemName)        
         if item:
             packet = f"%xt%zm%bankToInv%{bot.areaId}%{item.item_id}%{item.char_item_id}%"
@@ -25,7 +25,7 @@ class BankToInvCmd(Command):
                 if itemBank.item_name == item.item_name:
                     bot.player.BANK.remove(itemBank)
                     break
-            time.sleep(1)
+            await asyncio.sleep(1)
         
     def to_string(self):
         return f"Bank to inv : {self.itemName}"

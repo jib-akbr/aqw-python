@@ -9,7 +9,7 @@ class HuntMonsterCmd(Command):
         self.monsterName = monsterName
         self.mostMonsters = mostMonsters
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         # Check if monster in current cell is exist and alive
         for monster in bot.monsters:
             if monster.mon_name.lower() == self.monsterName.lower() \

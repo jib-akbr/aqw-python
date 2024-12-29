@@ -6,7 +6,7 @@ class Command(ABC):
     skip_delay = False
     
     @abstractmethod
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         pass
         
     @abstractmethod

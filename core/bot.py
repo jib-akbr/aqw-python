@@ -1,6 +1,7 @@
 import socket
 from core.player import Player
 from core.utils import normalize
+import re
 import json
 import time
 from typing import List
@@ -16,6 +17,7 @@ from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType
+from handlers import register_quest_task
 
 class Bot:
 
@@ -26,7 +28,9 @@ class Bot:
             cmdDelay: int = 1000,
             showLog: bool = True, 
             showDebug: bool = False,
-            showChat: bool = True
+            showChat: bool = True,
+            autoRelogin: bool = False,
+            followPlayer: str = ""
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -34,11 +38,15 @@ class Bot:
         self.showDebug = showDebug
         self.showChat = showChat
         self.items_drop_whitelist = itemsDropWhiteList
+        self.auto_relogin = autoRelogin
+        self.follow_player = followPlayer
         
-        self.sleepUntil = 0
-        self.player = None
-        self.is_chat_load_complete= False
+        self.is_char_load_complete= False
         self.is_joining_map = False
+        self.is_client_connected = False
+        
+        self.wait_ms = 0
+        self.player = None
         self.cmds = []
         self.index = 0
         self.areaId = None
@@ -49,31 +57,30 @@ class Bot:
         self.password = ""
         self.server = ""
         self.server_info = None
-        self.is_client_connected = False
         self.client_socket = None
+        self.users_id_in_cell = []
+        self.users_name_in_cell = []
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
-        self.registered_quests_event = threading.Event()
-        self.register_quest_spammer = True
+        self.is_register_quest_task_running = False
+        self.followed_player_cell = None
         
     def set_login_info(self, username, password, server):
         self.username = username
         self.password = password
         self.server = server
         
-    def start_bot(self):
+    async def start_bot(self):
         self.login(self.username, self.password, self.server)
         if self.server_info:
-            asyncio.run(self.connect_client())
-            if self.register_quest_spammer:
-                self.run_registered_quests()        
-            asyncio.run(self.run_commands())
+            await self.connect_client()
+            await self.run_commands()
+            
+    def run_register_quest_task(self):
+        asyncio.create_task(register_quest_task(self))  
     
     def stop_bot(self):
-        self.player.BANK = []
-        self.player.INVENTORY = []
-        self.player.TEMPINVENTORY = []
         self.is_client_connected = False
         if self.client_socket:
             self.client_socket.close()
@@ -90,6 +97,22 @@ class Bot:
         self.player = Player(username, password)
         if self.player.getInfo():
             self.server_info = self.player.getServerInfo(server)
+            
+    async def relogin_and_restart(self):
+        self.stop_bot()
+        self.index = 0
+        self.is_char_load_complete = False
+        self.is_joining_map = False
+        self.is_register_quest_task_running = False
+        self.loaded_quest_datas = []
+        self.loaded_shop_datas: List[Shop] = []
+        self.registered_auto_quest_ids = []
+        try:
+            print("Restarting bot in 10 secs...")
+            await asyncio.sleep(10)
+            await self.start_bot()
+        except Exception as e:
+            print(f"Error during restarting bot: {e}")
         
     async def connect_client(self):
         hostname = self.server_info[0] 
@@ -106,34 +129,40 @@ class Bot:
             # self.print_commands()
             print("Running bot commands...")
         while self.is_client_connected:
+            if self.registered_auto_quest_ids and not self.is_register_quest_task_running:
+                self.run_register_quest_task()
+                self.is_register_quest_task_running = True
             messages = self.read_batch(self.client_socket)
-            # Handle packets from server
             if messages:
                 for msg in messages:
                     await self.handle_server_response(msg)
-            # Skipping bot commands
-            if self.sleepUntil > time.time():
-                time.sleep(0.1)
+                    
+            # do wait if any,its different than cmdDelay
+            await asyncio.sleep(self.wait_ms)
+            self.wait_ms = 0
+            
+            if self.player.ISDEAD:
+                self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
+                self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
+                self.jump_cell(self.player.CELL, self.player.PAD)
+                self.player.ISDEAD = False
                 continue
-            else:
-                if self.player.ISDEAD:
-                    self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
-                    self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
-                    self.jump_cell(self.player.CELL, self.player.PAD)
-                    self.player.ISDEAD = False
-                    continue
             # Execute a command
-            if self.is_chat_load_complete:
+            if self.is_char_load_complete:
                 if self.is_joining_map:
                     continue
+                if self.follow_player and self.followed_player_cell != self.player.CELL:
+                    await self.goto_player(self.follow_player)
+                    await asyncio.sleep(1)
+                    continue                
                 if self.index >= len(self.cmds):
-                    self.index = 0
+                    self.index = 0                
                 cmd = self.cmds[self.index]
-                self.handle_command(cmd)           
+                await self.handle_command(cmd)
                 self.index += 1
-                if not cmd.skip_delay:
-                    self.sleepUntil = time.time() + self.cmdDelay/1000
         print('BOT STOPPED\n')
+        if self.auto_relogin:
+            await self.relogin_and_restart()
         
     def print_commands(self):
         print("Index\tCommand")
@@ -142,31 +171,31 @@ class Bot:
             print(cmd.to_string())
         print("------------------------------")
 
-    def handle_command(self, command):  
-        if self.showLog:
+    async def handle_command(self, command):
+        if command.skip_delay: # when skip_delay, we execute the cmd first before print its text
+            await command.execute(self)
+        if self.showLog: # print text
             cmd_string = command.to_string()
             if cmd_string:
                 cmd_string = cmd_string.split(':')
                 if len(cmd_string) > 1:
-                    print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
+                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
                 else:
-                    print(Fore.BLUE + f"[{self.index}] [{datetime.now().strftime('%H:%M:%S')}] {cmd_string[0]}" + Fore.WHITE)
-        command.execute(self)
-        self.doSleep(self.cmdDelay)
+                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.WHITE)
+        if not command.skip_delay:  # when not skip delay, execute cmd after print its text
+            await command.execute(self)
+            await asyncio.sleep(self.cmdDelay/1000)
         return
     
     def check_user_access_level(self, username: str, access_level: int):
         if access_level >= 30:
             print(Fore.RED + f"You met a {username}, a staff!")
+            self.auto_relogin = False
             self.stop_bot()
 
     async def handle_server_response(self, msg):
-        if "slow down" in msg:
-            print(Fore.RED + msg + Fore.WHITE)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
-        if "logout" in msg.lower():
-            raise CustomError("LOGOUT")
 
         if self.is_valid_json(msg):
             data = json.loads(msg)
@@ -176,13 +205,20 @@ class Bot:
                 return
             cmd = data["cmd"]
             if cmd == "moveToArea":
+                uo_branch = data.get("uoBranch")
                 mon_branch = data.get("monBranch")
                 mon_def = data.get("mondef")
                 mon_map = data.get("monmap")
-                self.areaName = data["areaName"]
+                self.areaName = data["areaName"] #"yulgar-99999"
                 self.areaId = data["areaId"]
-                self.strMapName = data["strMapName"]
+                self.strMapName = data["strMapName"] #"yulgar"
                 self.monsters = []
+                for i_uo_branch in uo_branch:
+                    if (i_uo_branch["uoName"] == self.player.USER.lower()):
+                        self.player.PAD = i_uo_branch["strPad"]
+                        self.player.CELL = i_uo_branch["strFrame"]
+                    if (i_uo_branch["uoName"] == self.follow_player.lower()):
+                        self.followed_player_cell = i_uo_branch["strFrame"]
                 if mon_def and mon_branch and mon_map:
                     for i_mon_branch in mon_branch:
                         self.monsters.append(Monster(i_mon_branch))
@@ -204,7 +240,7 @@ class Bot:
                             self.player.GOLD = int(i["data"]["intGold"])
                         self.check_user_access_level(username, access_level)
                     if not self.player.BANK:
-                        print("Load bank and inventory...")
+                        # print("Load bank and inventory...")
                         self.player.loadBank()
                         self.write_message(f"%xt%zm%retrieveInventory%{self.areaId}%{self.username_id}%")
                 except Exception as e:
@@ -216,7 +252,7 @@ class Bot:
             elif cmd == "equipItem":
                 pass
             elif cmd == "loadInventoryBig":
-                self.is_chat_load_complete = True
+                self.is_char_load_complete = True
                 for item in data["items"]:
                     self.player.INVENTORY.append(ItemInventory(item))
                 self.player.FACTIONS = data.get("factions", [])
@@ -271,7 +307,7 @@ class Bot:
                 if int(data["userID"]) == self.player.LOGINUSERID:
                     print(Fore.RED + "DEATH" + Fore.WHITE)
                     self.player.ISDEAD = True
-                    self.doSleep(11000)
+                    self.do_wait(11000)
             elif cmd == "getQuests":
                 for quest_id, quest_data in data.get("quests").items():
                     self.loaded_quest_datas.append(quest_data)
@@ -288,7 +324,8 @@ class Bot:
                                     "CharItemID": data["CharItemID"],
                                     "iQty": data["iQty"]
                                 })
-                                if player_item := self.player.get_item_inventory_by_id(bought.item_id):
+                                player_item = self.player.get_item_inventory_by_id(bought.item_id)
+                                if player_item:
                                     player_item.qty += bought.qty
                                 else:
                                     self.player.INVENTORY.append(bought)
@@ -333,15 +370,17 @@ class Bot:
                     dropItem = ItemInventory(dropItem)
                     # Item inventory
                     if dropItem.char_item_id:
-                        if playerItem := self.player.get_item_inventory_by_id(itemId):
+                        playerItem = self.player.get_item_inventory_by_id(itemId)
+                        if playerItem:
                             playerItem.qty = dropItem.qty_now
                             playerItem.char_item_id = dropItem.char_item_id
-                            await self.check_registered_quest_completion(itemId)
+                            # await self.check_registered_quest_completion(itemId)
                         else:
                             self.player.INVENTORY.append(dropItem)
                     # Item temp inventory
                     else:
-                        if playerItem := self.player.get_item_temp_inventory_by_id(itemId):
+                        playerItem = self.player.get_item_temp_inventory_by_id(itemId)
+                        if playerItem:
                             playerItem.qty += dropItem.qty
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
@@ -350,14 +389,16 @@ class Bot:
                 for s_item in sItems:
                     itemId = s_item.split(':')[0]
                     iQty = int(s_item.split(':')[1])
-                    if playerItem := self.player.get_item_inventory_by_id(itemId):
+                    playerItem = self.player.get_item_inventory_by_id(itemId)
+                    if playerItem:
                         if playerItem.qty - iQty == 0:
                             self.player.INVENTORY.remove(playerItem)
                         else:
                             playerItem.qty -= iQty
-                    if playerTempItem := self.player.get_item_temp_inventory_by_id(itemId):
+                    playerTempItem = self.player.get_item_temp_inventory_by_id(itemId)
+                    if playerTempItem:
                         if playerTempItem.qty - iQty == 0:
-                            self.player.INVENTORY.remove(playerTempItem)
+                            self.player.TEMPINVENTORY.remove(playerTempItem)
                         else:
                             playerTempItem.qty -= iQty
             elif cmd == "event":
@@ -365,7 +406,7 @@ class Bot:
                 if data["args"]["zoneSet"]  == "A":
                     if self.strMapName.lower() == "ultraspeaker":
                         self.walk_to(100, 321)
-                        time.sleep(0.5)
+                        await asyncio.sleep(0.5)
             elif cmd == "ccqr":
                 quest_id = data.get('QuestID', None)
                 s_name = data.get('sName', None)
@@ -391,25 +432,27 @@ class Bot:
                     loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
                     if not str(quest_id) in str(loaded_quest_ids):
                         self.write_message(f"%xt%zm%getQuests%{self.areaId}%{quest_id}%")
-                        self.doSleep(500)
+                        self.do_wait(500)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
-                return
             elif "joinOK" in msg:
                 self.extract_user_ids(msg)
-                return
             elif "userGone" in msg:
                 self.extract_remove_user(msg)
-                return
             elif "uER" in msg:
                 self.extract_new_user(msg)
                 root = ET.fromstring(msg)
                 newId = root.find(".//u").get("i")
                 msg = f"%xt%zm%retrieveUserData%{self.areaId}%{newId}%"
                 self.write_message(msg)
+            elif "logout" in msg:
+                print("Client logged out.")
+                self.is_client_connected = False
                 return
         elif msg.startswith("%") and msg.endswith("%"):
+            if f"%server%" in msg:
+                print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {msg.split('%')[4]}" + Fore.RESET)
             if f"%xt%server%-1%Profanity filter On.%" in msg:
                 self.write_message(f"%xt%zm%firstJoin%1%")
                 self.write_message(f"%xt%zm%cmd%1%ignoreList%$clearAll%")
@@ -419,7 +462,26 @@ class Bot:
             elif "warning" in msg:
                 msg = msg.split('%')
                 text = msg[4]
-                print(Fore.RED + text + Fore.WHITE)
+                print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
+            elif "exitArea" in msg:
+                if msg.split('%')[5].lower() == self.follow_player.lower():
+                    self.followed_player_cell = None
+                    await self.ensure_leave_from_combat(always=True)
+            elif "uotls" in msg:
+                username = msg.split('%')[4]
+                if username == self.follow_player and "strPad" in msg and "strFrame" in msg:
+                    movement = msg.split('%')[5]
+                    cell = None
+                    pad = None
+                    for m in movement.split(','):
+                        key, value = m.split(':')
+                        if key == "strFrame":
+                            cell = value
+                        elif key == "strPad":
+                            pad = value
+                    if cell != self.player.CELL:
+                        self.followed_player_cell = cell
+                        self.jump_cell(cell, pad)
             elif "respawnMon" in msg:
                 pass
             elif "chatm" in msg:
@@ -436,27 +498,8 @@ class Bot:
                     print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {sender} [WHISPER] : {text}" + Fore.WHITE)
             elif f"%xt%uotls%-1%{self.player.USER}%afk:true%" in msg:
                 pass
-    
-    # Spamming packet per interval
-    def run_registered_quests(self):
-        self.registered_quests_thread = threading.Thread(target=self.registered_quests_worker, daemon=True)
-        self.registered_quests_thread.start()
-    
-    def registered_quests_worker(self):
-        print("Running registered quests...")
-        while True:
-            while self.is_client_connected:
-                for registered_quest_id in self.registered_auto_quest_ids:
-                    if self.can_turn_in_quest(registered_quest_id):
-                        self.turn_in_quest(registered_quest_id)
-                        time.sleep(1)
-                        self.accept_quest(registered_quest_id)
-                    time.sleep(3)
-            self.registered_quests_event.wait()
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
-        if self.register_quest_spammer:
-            return
         for registered_quest_id in self.registered_auto_quest_ids:
             if self.can_turn_in_quest(registered_quest_id):
                 self.turn_in_quest(registered_quest_id)
@@ -515,6 +558,9 @@ class Bot:
             return True
         except ElementTree.ParseError:
             return False
+    
+    async def goto_player(self, player_name):
+        self.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
         
     def get_drop(self, user_id, item_id):
         packet = f"%xt%zm%getDrop%{user_id}%{item_id}%"
@@ -522,12 +568,12 @@ class Bot:
     
     def accept_quest(self, quest_id: int):
         self.write_message(f"%xt%zm%acceptQuest%{self.areaId}%{quest_id}%")
-        self.doSleep(500)
+        self.do_wait(500)
         
     def turn_in_quest(self, quest_id: int, item_id: int = -1):
         packet = f"%xt%zm%tryQuestComplete%{self.areaId}%{quest_id}%{item_id}%false%1%wvz%"
         self.write_message(packet)
-        self.doSleep(500)
+        self.do_wait(500)
 
     def use_scroll(self, monsterid, max_target, scroll_id):
         self.target = [f"i1>m:{i}" for i in monsterid][:max_target]
@@ -537,10 +583,10 @@ class Bot:
         self.target = [f"i1>p:{i}" for i in monsterid][:targetMax]
         self.write_message(f"%xt%zm%gar%1%0%i1>p:{self.user_id}%{potion_id}%wvz%")
 
-    def use_skill_to_monster(self, skill, monsterid, max_target):
-        if not self.check_is_skill_safe(skill):
+    def use_skill_to_monster(self, skill, monsters_id, max_target):
+        if not self.check_is_skill_safe(skill) or not monsters_id:
             return
-        self.target = [f"a{skill}>m:{i}" for i in monsterid][:max_target]
+        self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
@@ -553,22 +599,22 @@ class Bot:
         
     def check_is_skill_safe(self, skill: int):
         conditions = {
-            "Void Highlord": {
+            "void highlord": {
                 "hp_threshold": 50, # in percentage of current hp from max hp
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "Scarlet Sorceress": {
+            "scarlet sorceress": {
                 "hp_threshold": 50,
                 "skills_to_check": [1, 4],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "Dragon of Time": {
+            "dragon of time": {
                 "hp_threshold": 40,
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "ArchPaladin": {
+            "archpaladin": {
                 "hp_threshold": 40,
                 "skills_to_check": [3],
                 "condition": lambda hp, threshold: hp > threshold
@@ -576,17 +622,18 @@ class Bot:
         }
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)
-        if equipped_class in conditions:
-            condition = conditions[equipped_class]
-            current_hp = self.player.CURRENT_HP
-            max_hp = self.player.MAX_HP
-            # Check if the current conditions match
-            if skill in condition["skills_to_check"] and condition["condition"]((current_hp / max_hp) * 100, condition["hp_threshold"]):
-                return False
+        if equipped_class:
+            if equipped_class.item_name in conditions:
+                condition = conditions[equipped_class.item_name]
+                current_hp = self.player.CURRENT_HP
+                max_hp = self.player.MAX_HP
+                # Check if the current conditions match
+                if skill in condition["skills_to_check"] and condition["condition"]((current_hp / max_hp) * 100, condition["hp_threshold"]):
+                    return False
         return True
 
-    def doSleep(self, sleepms):
-        self.sleepUntil = time.time() + int(sleepms)/1000.0
+    def do_wait(self, wait_ms: int):
+        self.wait_ms = wait_ms/1000
 
     def extract_user_ids(self, xml_message: str):
         root = ET.fromstring(xml_message)
@@ -612,10 +659,10 @@ class Bot:
                 self.user_ids.remove(i)
                 break
         
-    def ensure_leave_from_combat(self, sleep_ms: int = 2000):
-        if self.player.IS_IN_COMBAT:
+    async def ensure_leave_from_combat(self, sleep_ms: int = 2000, always: bool = False):
+        if self.player.IS_IN_COMBAT or always:
             self.jump_cell(self.player.CELL, self.player.PAD)
-            time.sleep(sleep_ms/1000)
+            await asyncio.sleep(sleep_ms/1000)
         
     def jump_cell(self, cell, pad):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"
@@ -657,6 +704,7 @@ class Bot:
         return True
 
     def reset_cmds(self):
+        self.index = 0
         self.cmds = []
         
     def add_cmd(self, cmd):

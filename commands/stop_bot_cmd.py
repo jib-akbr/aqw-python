@@ -7,7 +7,7 @@ class StopBotCmd(Command):
     def __init__(self, msg: str = ""):
         self.msg = msg
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         print(Fore.RED + self.msg + Fore.RESET)
         bot.stop_bot()
         

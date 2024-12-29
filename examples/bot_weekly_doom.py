@@ -1,5 +1,6 @@
 from core.bot import Bot
 import commands as cmd
+import asyncio
 
 users = [
 	{
@@ -23,4 +24,4 @@ for user in users:
 				cmd.SleepCmd(1000),
 				cmd.StopBotCmd(msg="Bot Finished.")
 		])
-		b.start_bot()
+		asyncio.run(b.start_bot())

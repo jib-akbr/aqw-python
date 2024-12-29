@@ -16,7 +16,7 @@ class UseSkillCmd(Command):
             self.target_monsters = target_monsters
         return UseSkillCmd(index, self.target_monsters)
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         if not bot.player.canUseSkill(int(self.index)) and not bot.canuseskill:
             bot.debug(f"Skill {self.index} not ready yet")
             return
@@ -28,16 +28,24 @@ class UseSkillCmd(Command):
 
         if skill["tgt"] == "h": 
             priority_monsters_id = []
-            cell_monsters_id = [mon.mon_map_id for mon in bot.monsters if mon.frame == bot.player.CELL]
+            cell_monsters_id = [mon.mon_map_id for mon in bot.monsters if mon.frame == bot.player.CELL and mon.is_alive]
             final_ids = []
             if self.target_monsters != "*":
                 # Mapping priority_monsters_id
                 for target_monster in self.target_monsters.split(','):
                     for monster in bot.monsters:
-                        if monster.mon_name.lower() == target_monster.lower() \
-                                and monster.frame == bot.player.CELL \
-                                and monster.is_alive:
-                            priority_monsters_id.append(monster.mon_map_id)
+                        if target_monster.startswith('id.'):
+                            target_monster_id = target_monster.split('.')[1]
+                            if monster.mon_map_id == target_monster_id \
+                                    and monster.frame == bot.player.CELL \
+                                    and monster.is_alive:
+                                priority_monsters_id.append(monster.mon_map_id)
+                            break
+                        else:
+                            if monster.mon_name.lower() == target_monster.lower() \
+                                    and monster.frame == bot.player.CELL \
+                                    and monster.is_alive:
+                                priority_monsters_id.append(monster.mon_map_id)
                             break
                 # Check if the first index is one of the priority targets
                 if len(priority_monsters_id) > 0:

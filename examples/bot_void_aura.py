@@ -1,6 +1,7 @@
 from core.bot import Bot
 from templates.hunt import hunt_item_cmds
 import commands as cmd
+import asyncio
 
 # Initialize bot
 b = Bot(
@@ -25,7 +26,7 @@ b = Bot(
 b.set_login_info("u", "p", "yorumi")
 
 # Initialize variables
-private_room_number = 9099
+private_room_number = 999999
 
 # Arrange commands
 b.add_cmds([
@@ -126,4 +127,4 @@ b.add_cmds([
     ])
 
 # Start bot
-b.start_bot()
+asyncio.run(b.start_bot())

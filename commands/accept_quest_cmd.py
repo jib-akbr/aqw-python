@@ -7,7 +7,7 @@ class AcceptQuestCmd(Command):
     def __init__(self, quest_id: int):
         self.quest_id = quest_id
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         bot.accept_quest(self.quest_id)
         
     def to_string(self):

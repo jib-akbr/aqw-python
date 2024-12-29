@@ -6,7 +6,7 @@ class RegisterQuestCmd(Command):
     def __init__(self, questId: int):
         self.questId = questId
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         if self.questId not in bot.registered_auto_quest_ids:
             bot.registered_auto_quest_ids.append(self.questId)
             bot.accept_quest(self.questId)

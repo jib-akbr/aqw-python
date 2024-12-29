@@ -7,7 +7,7 @@ class ToLabelCmd(Command):
     def __init__(self, label: str):
         self.label = label.upper()
     
-    def execute(self, bot: Bot):
+    async def execute(self, bot: Bot):
         for i, cmd in enumerate(bot.cmds):
             if cmd.to_string() == f"[{self.label}]":
                 bot.index = i
