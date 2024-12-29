@@ -98,9 +98,21 @@ class Player:
                 return False
         return True
 
-    def updateTime(self, skillNumber):
-        skillDetail = self.SKILLS[skillNumber]
-        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) + 2000)
+    def updateTime(self, skillNumber: int):
+        skill_detail = self.SKILLS[skillNumber]
+        cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION)
+        self._update_skill_time(skillNumber, cooldown, force_update= True)
+
+    def delayAllSkills(self, except_skill: int, delay_ms: float = 1000):
+        """this is to delay skill to prevent server warning 'Please slow down'"""
+        for skill_number in range(len(self.SKILLS)):
+            if except_skill != skill_number:
+                self._update_skill_time(skill_number, float(delay_ms))
+    
+    def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):
+        new_cooldown_time = datetime.now() + timedelta(milliseconds=time_offset_ms)
+        if not self.SKILLUSED.get(skill_number) or self.SKILLUSED[skill_number] < new_cooldown_time or force_update:
+            self.SKILLUSED[skill_number] = new_cooldown_time
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:

@@ -6,7 +6,7 @@ class UseSkillCmd(Command):
     
     skip_delay = True
     
-    def __init__(self, index: int = 0, target_monsters: str = "*", hunt: bool = False):
+    def __init__(self, index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0):
         self.index = index
         self.target_monsters = target_monsters
     
@@ -17,7 +17,7 @@ class UseSkillCmd(Command):
         return UseSkillCmd(index, self.target_monsters)
     
     async def execute(self, bot: Bot):
-        if not bot.player.canUseSkill(int(self.index)) and not bot.canuseskill:
+        if not bot.player.canUseSkill(int(self.index)) and not bot.canuseskill and not bot.counterattack:
             bot.debug(f"Skill {self.index} not ready yet")
             return
 
@@ -65,6 +65,7 @@ class UseSkillCmd(Command):
         elif skill["tgt"] == "f":
             bot.use_skill_to_player(bot.skillNumber, max_target)
         bot.canuseskill = False
+        bot.player.delayAllSkills(except_skill = self.index) # delay from cdreduction
         
     def to_string(self):
         # return f"UseSkill : {self.index}"
