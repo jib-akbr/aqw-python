@@ -10,9 +10,15 @@ import asyncio
 load_dotenv()
 
 # Get credentials from environment variables
+# Or you can just directly write the creds
 username = os.getenv("USERNAME_AQW")
 password = os.getenv("PASSWORD_AQW")
 server = os.getenv("SERVER")
+
+# directly
+# username = "username"
+# password = "password"
+# server = "alteon"
 
 # Initialize bot
 b = Bot(
