@@ -43,6 +43,7 @@ b = Bot(
     farmClass="Legion Revenant")
 b.set_login_info(username, password, server)
 
+# this is the path refer to /bot
 bot_path = "bot.void_aura"
 try:
     bot_class = importlib.import_module(bot_path)
