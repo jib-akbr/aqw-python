@@ -40,13 +40,13 @@ class UseSkillCmd(Command):
                                     and monster.frame == bot.player.CELL \
                                     and monster.is_alive:
                                 priority_monsters_id.append(monster.mon_map_id)
-                            break
+                                break
                         else:
                             if monster.mon_name.lower() == target_monster.lower() \
                                     and monster.frame == bot.player.CELL \
                                     and monster.is_alive:
                                 priority_monsters_id.append(monster.mon_map_id)
-                            break
+                                break
                 # Check if the first index is one of the priority targets
                 if len(priority_monsters_id) > 0:
                     if not cell_monsters_id[0] in priority_monsters_id:
