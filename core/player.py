@@ -36,6 +36,9 @@ class Player:
         self.MAX_HP = 9999
         self.CURRENT_HP = 9999
         self.IS_IN_COMBAT = False
+        self.X: int = 0
+        self.Y: int= 0
+        self.AURAS = []
 
     def getInfo(self):
         url = "https://game.aq.com/game/api/login/now?"
@@ -169,3 +172,48 @@ class Player:
                 invItemQty = item.qty
                 break
         return [checkOperator(invItemQty, qty, operator), invItemQty]
+    
+    def getPlayerPositionXY(self) -> list[int]:
+        return [self.X, self.Y]
+    
+    def setPlayerPositionXY(self, X: int, Y: int):
+        self.X = X
+        self.Y = Y
+
+    def getPlayerCell(self) -> list[str]:
+        return [self.CELL, self.PAD]
+
+    def addAura(self, auras:list):
+        timestamp = datetime.now()
+        for aura in auras:
+            duration = aura.get('dur', 0)
+            expiration_time = timestamp + timedelta(seconds=duration)
+            aura_details ={
+                'name': aura.get('nam'),
+                'type': aura.get('t'),
+                'duration': duration,
+                'source_spell': aura.get('spellOn', None),
+                'icon': aura.get('icon'),
+                'applied_time': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'expires_at': expiration_time.strftime('%Y-%m-%d %H:%M:%S'),
+            }
+            is_new = aura.get('isNew', False)
+            if is_new:
+                self.AURAS.append(aura_details)
+            else:
+                for existing_aura in self.AURAS:
+                    if existing_aura['name'] == aura_details['name']:
+                        existing_aura['applied_time'] = aura_details['applied_time']
+                        existing_aura['expires_at'] = aura_details['expires_at']
+                        break
+            # print(f"{is_new} Aura: {aura_details['name']}, Type: {aura_details['type']}, Duration: {aura_details['duration']} seconds, "
+            #     f"Source Spell: {aura_details['source_spell']}, Icon: {aura_details['icon']}, "
+            #     f"Applied: {aura_details['applied_time']}, Expires: {aura_details['expires_at']}")
+            # print()
+    
+    def removeAura(self, auraName: str):
+        for aura in self.AURAS[:]:
+            if aura['name'] == auraName:
+                self.AURAS.remove(aura)
+                # print(f"aura removed: {auraName}")
+                break

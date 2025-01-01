@@ -9,7 +9,7 @@ class WalkCmd(Command):
         self.speed = speed
     
     async def execute(self, bot: Bot):
-        bot.walk_to(self.x, self.y, self.speed)
+        await bot.walk_to(self.x, self.y, self.speed)
         
     def to_string(self):
         return f"Walk : {self.x} {self.y}"

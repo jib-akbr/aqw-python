@@ -1,6 +1,7 @@
 from core.bot import Bot
 from abstracts.command import Command
 from model import Monster
+import asyncio
 
 class UseSkillCmd(Command):
     
@@ -17,7 +18,7 @@ class UseSkillCmd(Command):
         return UseSkillCmd(index, self.target_monsters)
     
     async def execute(self, bot: Bot):
-        if not bot.player.canUseSkill(int(self.index)) and not bot.canuseskill and not bot.counterattack:
+        if not bot.player.canUseSkill(int(self.index)) and not bot.canuseskill:
             bot.debug(f"Skill {self.index} not ready yet")
             return
 
@@ -65,7 +66,8 @@ class UseSkillCmd(Command):
         elif skill["tgt"] == "f":
             bot.use_skill_to_player(bot.skillNumber, max_target)
         bot.canuseskill = False
-        bot.player.delayAllSkills(except_skill = self.index) # delay from cdreduction
+        await asyncio.sleep(1)
+        # bot.player.delayAllSkills(except_skill = self.index) # delay from cdreduction
         
     def to_string(self):
         # return f"UseSkill : {self.index}"

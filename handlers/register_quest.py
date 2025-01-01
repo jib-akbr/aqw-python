@@ -9,5 +9,6 @@ async def register_quest_task(bot: 'Bot'):
                 bot.turn_in_quest(registered_quest_id)
                 await asyncio.sleep(1)
                 bot.accept_quest(registered_quest_id)
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
+        await asyncio.sleep(2)
     print("Stopping registered quests...")
