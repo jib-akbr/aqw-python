@@ -1,8 +1,18 @@
+import os
+from dotenv import load_dotenv
 import importlib
 from core.bot import Bot
 from templates.attack import generalAttack
 import commands as cmd
 import asyncio
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get credentials from environment variables
+username = os.getenv("USERNAME_AQW")
+password = os.getenv("PASSWORD_AQW")
+server = os.getenv("SERVER")
 
 # Initialize bot
 b = Bot(
@@ -25,7 +35,7 @@ b = Bot(
     showChat=True,
     isScriptable=True,
     farmClass="Legion Revenant")
-b.set_login_info("u", "p", "alteon")
+b.set_login_info(username, password, server)
 
 bot_path = "bot.void_aura"
 try:
