@@ -8,3 +8,7 @@ Arrange your commands, the bot will execute them in sequence. See example in bot
   python -m examples.bot_tes
 ```
 
+add new mode: scriptable mode. See example in start_point.py
+```bash
+  python start_point.py
+```
