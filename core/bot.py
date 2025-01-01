@@ -30,7 +30,8 @@ class Bot:
             showDebug: bool = False,
             showChat: bool = True,
             autoRelogin: bool = False,
-            followPlayer: str = ""
+            followPlayer: str = "",
+            restartOnAFK: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -40,6 +41,7 @@ class Bot:
         self.items_drop_whitelist = itemsDropWhiteList
         self.auto_relogin = autoRelogin
         self.follow_player = followPlayer
+        self.restart_on_afk = restartOnAFK
         
         self.is_char_load_complete= False
         self.is_joining_map = False
@@ -496,7 +498,9 @@ class Bot:
                     text = msg[4]
                     sender = msg[5]
                     print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {sender} [WHISPER] : {text}" + Fore.WHITE)
-            elif f"%xt%uotls%-1%{self.player.USER}%afk:true%" in msg:
+            elif f"Your status is now Away From Keyboard" in msg:
+                print("Restart cmds on AFK...")
+                self.index = 0
                 pass
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
