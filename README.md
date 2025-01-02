@@ -47,8 +47,8 @@ python -m examples.bot_tes
 
 ### Scriptable Mode
 
-Run the bot in scriptable mode using `start_point.py`:
+Run the bot in scriptable mode using `single_acc_without_env.py`:
 
 ```bash
-python start_point.py
+python single_acc_without_env.py
 ```
