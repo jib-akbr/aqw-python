@@ -290,7 +290,7 @@ class Command:
                 is_equipped = True
                 s_type = item.s_type
                 item.is_equipped = is_equipped
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(1)
                 break
         # Update unequip previous item
         if is_equipped and s_type:
@@ -298,6 +298,13 @@ class Command:
                 if item.s_type == s_type and item.is_equipped and not item.item_name == item_name.lower():
                     item.is_equipped = False
                     break
+    
+    @check_alive
+    async def equip_item_by_enhancement(self, enh_pattern_id: int):
+        # TODO: should change the enhance_pattern_id to enhance name
+        item = self.bot.player.get_item_inventory_by_enhance_id(enh_pattern_id)
+        if item:
+            await self.equip_item(item.item_name)
 
     def add_drop(self, itemName: Union[str, List[str]]) -> None:
         if isinstance(itemName, str):

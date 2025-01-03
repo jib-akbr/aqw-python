@@ -37,4 +37,6 @@ class ItemInventory:
         self.char_item_id: int = int(json_data.get('CharItemID', 0))
         self.shop_item_id: str = json_data.get('ShopItemID', '')
         self.qty_now: int = int(json_data.get('iQtyNow', 0))
+
+        self.enh_pattern_id: int = int(json_data.get('EnhPatternID', 0))
         

@@ -5,10 +5,12 @@ from templates.hunt import hunt_item, attack_script
 
 async def main(bot: Bot):
     cmd = Command(bot)
-    private_room_number = 9909
+    private_room_number = 1231
 
     if bot.farmClass:
         await cmd.equip_item(bot.farmClass)
+        await cmd.equip_item_by_enhancement(enh_pattern_id=29) # 29 for penitence
+        await cmd.equip_item_by_enhancement(enh_pattern_id=10) # 10 for valiance
     
     await cmd.ensure_accept_quest(8154)
     await cmd.join_map("ultraengineer", private_room_number)
