@@ -1,0 +1,43 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Git repository
+.git/
+
+# VSCode settings
+.vscode/
+
+# Test files
+tests/
+
+# Python virtual environment
+.venv/
+
+# IDE and Editor specific files
+*.swp
+*.swo
+.idea/
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+
+# Dockerfile and docker-related files (optional)
+Dockerfile*
+.dockerignore
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.tox/
+*.nox/
+*.coverage
+*.hypothesis/
+*.pytest_cache/
+*.mypy_cache/
