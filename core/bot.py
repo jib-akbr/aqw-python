@@ -482,7 +482,7 @@ class Bot:
                         self.do_wait(500)
                 elif data["bSuccess"] == 0:
                     if quest_id not in self.failed_get_quest_datas:
-                        self.failed_get_quest_datas(quest_id)
+                        self.failed_get_quest_datas.append(quest_id)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
