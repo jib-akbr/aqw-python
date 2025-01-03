@@ -140,6 +140,12 @@ class Player:
             if item.item_id == str(itemId):
                 return item
         return None
+
+    def get_item_inventory_by_enhance_id(self, enh_pattern_id: int):
+        for item in self.INVENTORY:
+            if item.enh_pattern_id == enh_pattern_id:
+                return item
+        return None
     
     def get_item_temp_inventory_by_id(self, itemId):
         for item in self.TEMPINVENTORY:
