@@ -15,24 +15,15 @@ Arrange your commands, and the bot will execute them in sequence. See an example
    cd aqw-python
    ```
 
-2. **Set up a virtual environment:**
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
+2. **Install dependencies:**
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables:**
-   Use the `.env.example` file as a template to create your `.env` file in the root directory. Example:
-   ```bash
-   cp .env.example .env
-   ```
+3. **Set up environment variables:**
+   Use the `.env.example` file as a template to create your `.env` file in the root directory.
+   
    Update the `.env` file with your actual environment variable values.
 
 ## Usage
