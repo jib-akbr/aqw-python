@@ -452,8 +452,7 @@ class Bot:
                 print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
                 if data["args"]["zoneSet"]  == "A":
                     if self.strMapName.lower() == "ultraspeaker":
-                        self.walk_to(100, 321)
-                        await asyncio.sleep(0.5)
+                        await self.walk_to(100, 321)
             elif cmd == "ccqr":
                 quest_id = data.get('QuestID', None)
                 s_name = data.get('sName', None)
@@ -482,7 +481,7 @@ class Bot:
                         self.do_wait(500)
                 elif data["bSuccess"] == 0:
                     if quest_id not in self.failed_get_quest_datas:
-                        self.failed_get_quest_datas(quest_id)
+                        self.failed_get_quest_datas.append(quest_id)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")

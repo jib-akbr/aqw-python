@@ -1,7 +1,5 @@
 from core.bot import Bot
 from core.commands import Command
-import asyncio
-from templates.hunt import hunt_item, attack_script
 
 async def main(bot: Bot):
     cmd = Command(bot)
@@ -17,10 +15,23 @@ async def main(bot: Bot):
     await cmd.jump_cell("r2", "Left")
 
     while not cmd.wait_count_player(4):
-        await asyncio.sleep(0.1)
+        await cmd.sleep(100)
 
+    skill_list = [0,1,2,0,3,4]
+    skill_index = 0
     while cmd.is_monster_alive("Ultra Engineer") and cmd.isStillConnected():
-        await attack_script(cmd, "Defense Drone,Attack Drone,Ultra Engineer")
+        if cmd.hp_below_percentage(60):
+            equipped_class = cmd.get_equipped_class()
+            if equipped_class:
+                class_name = equipped_class.item_name.lower()
+                if class_name == "archpaladin" or class_name == "lord of order":
+                    await cmd.use_skill(2)
+                elif class_name == "legion revenant":
+                    await cmd.use_skill(3)
+        await cmd.use_skill(skill_list[skill_index], "Defense Drone,Attack Drone,Ultra Engineer")
+        skill_index += 1
+        if skill_index >= len(skill_list):
+            skill_index = 0
     
     await cmd.join_map("battleon", private_room_number)
 

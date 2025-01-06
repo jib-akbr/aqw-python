@@ -6,6 +6,7 @@ from functools import wraps
 from inspect import iscoroutinefunction
 from datetime import datetime
 from colorama import Fore
+from model.inventory import ItemType
 
 def check_alive(func):
     @wraps(func)
@@ -52,9 +53,19 @@ class Command:
 
     def isStillConnected(self) -> bool:
         return self.bot.is_client_connected
+    
+    def shouldFollowPlayer(self) -> bool:
+        return self.bot.follow_player and self.bot.followed_player_cell != self.bot.player.CELL
 
-    def stopBot(self):
+    def stopBot(self, msg: str = ""):
+        print(Fore.RED + msg + Fore.RESET)
+        print(Fore.RED + "stop bot: " + self.bot.player.USER + Fore.RESET)
         self.bot.stop_bot()
+    
+    @check_alive
+    async def goto_player(self, player_name: str):
+        self.bot.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
+        await self.sleep(1000)
     
     @check_alive
     async def leave_combat(self, safeLeave: bool = True) -> bool:
@@ -191,8 +202,10 @@ class Command:
                         seen.add(monster_id)
             else:
                 final_ids = cell_monsters_id
-            # print(f"tgt: {final_ids}")
-            self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
+            if scroll_id:
+                self.bot.use_scroll(final_ids, max_target, scroll_id)
+            else:
+                self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
         self.bot.canuseskill = False
@@ -300,6 +313,15 @@ class Command:
                     break
     
     @check_alive
+    async def equip_scroll(self, item_name: str, item_type: str = "scroll"):
+        for item in self.bot.player.INVENTORY:
+            if item.item_name.lower() == item_name.lower():
+                packet = f"%xt%zm%geia%%{self.bot.areaId}%{item_type}%{item.s_meta}%{item.item_id}%"
+                self.bot.write_message(packet)
+                await asyncio.sleep(1)
+                break
+    
+    @check_alive
     async def equip_item_by_enhancement(self, enh_pattern_id: int):
         # TODO: should change the enhance_pattern_id to enhance name
         item = self.bot.player.get_item_inventory_by_enhance_id(enh_pattern_id)
@@ -366,3 +388,22 @@ class Command:
     def stop_aggro(self):
         self.bot.is_aggro_handler_task_running = False
         self.bot.aggro_mons_id = []
+
+    @check_alive
+    async def load_shop(self, shop_id: int):
+        msg = f"%xt%zm%loadShop%{self.bot.areaId}%{shop_id}%"
+        self.bot.write_message(msg)
+        await self.sleep(1000)
+
+    def get_loaded_shop(self, shop_id: int):
+        for loaded_shop in self.bot.loaded_shop_datas:
+            if str(loaded_shop.shop_id) == str(shop_id):
+                return loaded_shop
+        return None
+    
+    def hp_below_percentage(self, percent: int):
+        return ((self.bot.player.CURRENT_HP / self.bot.player.MAX_HP) * 100) < percent
+    
+    def get_equipped_class(self):
+        equipped_class = self.bot.player.get_equipped_item(ItemType.CLASS)
+        return equipped_class if equipped_class else None
