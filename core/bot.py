@@ -502,7 +502,7 @@ class Bot:
         elif msg.startswith("%") and msg.endswith("%"):
             if f"%server%" in msg:
                 print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {msg.split('%')[4]}" + Fore.RESET)
-            if f"%xt%server%-1%Profanity filter On.%" in msg:
+            if f"%xt%loginResponse%" in msg:
                 self.write_message(f"%xt%zm%firstJoin%1%")
                 self.write_message(f"%xt%zm%cmd%1%ignoreList%$clearAll%")
             elif "You joined" in msg:
