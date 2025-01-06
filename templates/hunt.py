@@ -1,5 +1,96 @@
 from core.bot import Bot
 import commands as cmd
+from core.commands import Command
+
+async def hunt_item(
+        cmd: Command,
+        item_name: str, 
+        item_qty: int, 
+        map_name: str, 
+        cell: str = None, 
+        pad: str = "Left", 
+        room_number: int = None, 
+        monster_name: str = "*",
+        most_monster: bool = False,
+        farming_logger: bool = False,
+        hunt: bool = False,
+        auto_equip_class: bool = False,
+    ):
+    if cmd.is_in_bank(item_name):
+        cmd.bank_to_inv(item_name)
+
+    if (cmd.is_in_inventory(item_name, item_qty, operator=">=") or cmd.is_in_inventory(item_name, item_qty, operator=">=", isTemp=True)):
+        return
+    
+    if auto_equip_class:
+        if cmd.bot.farmClass:
+            await cmd.equip_item(cmd.bot.farmClass)
+
+    if cmd.is_not_in_map(map_name):
+        await cmd.join_map(map_name, room_number)
+
+    if cell:
+        hunt = False
+        await cmd.jump_cell(cell, pad)
+    else:
+        await cmd.jump_to_monster(monster_name, most_monster)
+
+    if farming_logger:
+        cmd.farming_logger(item_name, item_qty)
+
+    while cmd.isStillConnected():
+        if cmd.is_in_inventory(item_name, item_qty, operator=">=") or cmd.is_in_inventory(item_name, item_qty, operator=">=", isTemp=True):
+            await cmd.leave_combat()
+            return
+        
+        await attack_script(cmd, monster_name, hunt)
+
+async def kill_quest(
+        cmd: Command,
+        quest_id: int,
+        map_name: str, 
+        monster_name: str = "*",
+        room_number: int = None, 
+        hunt: bool = False
+    ):
+    await cmd.ensure_accept_quest(quest_id)
+    
+    if cmd.can_turnin_quest(quest_id):
+        await cmd.ensure_turn_in_quest(quest_id)
+        return
+    
+    if cmd.is_not_in_map(map_name):
+        await cmd.join_map(map_name, room_number)
+    
+    await cmd.jump_to_monster(monster_name)
+
+    while cmd.isStillConnected():
+        if cmd.can_turnin_quest(quest_id):
+            await cmd.leave_combat()
+            await cmd.ensure_turn_in_quest(quest_id)
+            return
+        
+        await attack_script(cmd, monster_name, hunt)
+
+async def quest_item_req(cmd: Command, map_name: str, item_name: str, qty: int = 1, monster: str = "*", is_temp: bool = True):    
+    if cmd.is_not_in_map(map_name):
+        await cmd.join_map(map_name)
+
+    while cmd.isStillConnected():
+        if cmd.is_in_inventory(item_name, qty, operator=">=", isTemp=is_temp):
+            cmd.leave_combat()
+            return
+        await attack_script(cmd, monster)
+
+        
+async def attack_script(cmd: Command, monster_name: str = "*", hunt: bool = False):
+    await cmd.use_skill(0, monster_name, hunt=hunt)
+    await cmd.use_skill(1, monster_name, hunt=hunt)
+    await cmd.use_skill(2, monster_name, hunt=hunt)
+    await cmd.use_skill(0, monster_name, hunt=hunt)
+    await cmd.use_skill(3, monster_name, hunt=hunt)
+    await cmd.use_skill(4, monster_name, hunt=hunt)
+
 
 def hunt_item_cmds(
         item_name: str, 

@@ -8,7 +8,7 @@ from typing import List
 from xml.etree import ElementTree
 import xml.etree.ElementTree as ET
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from colorama import Fore, Back, Style
 import threading
 import inspect
@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType
-from handlers import register_quest_task
+from handlers import register_quest_task, death_handler_task, aggro_handler_task
 
 class Bot:
 
@@ -30,7 +30,11 @@ class Bot:
             showDebug: bool = False,
             showChat: bool = True,
             autoRelogin: bool = False,
-            followPlayer: str = ""
+            followPlayer: str = "",
+            isScriptable: bool = False,
+            farmClass: str = None,
+            soloClass: str = None,
+            restartOnAFK: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -40,6 +44,10 @@ class Bot:
         self.items_drop_whitelist = itemsDropWhiteList
         self.auto_relogin = autoRelogin
         self.follow_player = followPlayer
+        self.isScriptable = isScriptable
+        self.farmClass = farmClass
+        self.soloClass = soloClass
+        self.restart_on_afk = restartOnAFK
         
         self.is_char_load_complete= False
         self.is_joining_map = False
@@ -61,9 +69,13 @@ class Bot:
         self.users_id_in_cell = []
         self.users_name_in_cell = []
         self.loaded_quest_datas = []
+        self.failed_get_quest_datas = []
+        self.aggro_mons_id = []
+        self.aggro_delay_ms = 500
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
         self.is_register_quest_task_running = False
+        self.is_aggro_handler_task_running = False
         self.followed_player_cell = None
         
     def set_login_info(self, username, password, server):
@@ -71,14 +83,34 @@ class Bot:
         self.password = password
         self.server = server
         
-    async def start_bot(self):
+    async def start_bot(self, botMain = None):
         self.login(self.username, self.password, self.server)
         if self.server_info:
             await self.connect_client()
-            await self.run_commands()
+            if self.isScriptable:
+                asyncio.create_task(self.read_server_in_background())
+
+                while self.is_char_load_complete is False:
+                    await asyncio.sleep(0.01)
+                
+                if not self.is_register_quest_task_running:
+                    self.run_register_quest_task()
+                    self.is_register_quest_task_running = True
+                
+                await botMain(self)
+                if self.auto_relogin:
+                    await self.relogin_and_restart()
+            else:
+                await self.run_commands()
             
     def run_register_quest_task(self):
         asyncio.create_task(register_quest_task(self))  
+    
+    def run_death_hanlder_task(self):
+        asyncio.create_task(death_handler_task(self))  
+
+    def run_aggro_hadler_task(self):
+        asyncio.create_task(aggro_handler_task(self))
     
     def stop_bot(self):
         self.is_client_connected = False
@@ -143,7 +175,7 @@ class Bot:
             
             if self.player.ISDEAD:
                 self.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
-                self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.user_id}%")
+                self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.username_id}%")
                 self.jump_cell(self.player.CELL, self.player.PAD)
                 self.player.ISDEAD = False
                 continue
@@ -298,16 +330,31 @@ class Bot:
                                 mon.is_alive = int(mon_condition.get("intState", mon.is_alive)) > 0
                                 mon.current_hp = int(mon_condition.get("intHP", mon.current_hp))
                                 break
+                if a:
+                    for action in a:
+                        tInf = action.get('tInf')
+                        if tInf.startswith('m'):
+                            # TODO for monster
+                            pass
+                        if self.username_id not in tInf:
+                            continue
+                        if action.get('cmd') == 'aura+':
+                            self.player.addAura(action.get('auras', []))
+                        elif action.get('cmd') == 'aura-':
+                            removed_aura = action.get('aura', {}).get('nam')
+                            self.player.removeAura(removed_aura)
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
                 self.player.SKILLS[5]["cd"] = data["o"]["cd"]
                 self.player.SKILLS[5]["tgt"] = data["o"]["tgt"]
-                print(f"Skills: {self.player.SKILLS}")
+                # print(f"Skills: {self.player.SKILLS}")
             elif cmd == "playerDeath":
                 if int(data["userID"]) == self.player.LOGINUSERID:
                     print(Fore.RED + "DEATH" + Fore.WHITE)
                     self.player.ISDEAD = True
                     self.do_wait(11000)
+                    if self.isScriptable:
+                        self.run_death_hanlder_task()
             elif cmd == "getQuests":
                 for quest_id, quest_data in data.get("quests").items():
                     self.loaded_quest_datas.append(quest_data)
@@ -361,7 +408,7 @@ class Bot:
                 for itemDrop in dropItems.values():
                     itemDrop = ItemInventory(itemDrop)
                     if itemDrop.item_name in [item.lower() for item in self.items_drop_whitelist]:
-                        self.get_drop(self.user_id, itemDrop.item_id)
+                        self.get_drop(self.username_id, itemDrop.item_id)
                         self.player.INVENTORY.append(itemDrop)
                         break
             elif cmd == "addItems":
@@ -416,7 +463,7 @@ class Bot:
                 ccqr_msg = data.get('msg', '')
                 if is_success == 1:
                     for loaded_quest in self.loaded_quest_datas:
-                        if loaded_quest["QuestID"] == quest_id and quest_id not in self.registered_auto_quest_ids:
+                        if str(loaded_quest["QuestID"]) == str(quest_id) and int(quest_id) not in self.registered_auto_quest_ids:
                             self.loaded_quest_datas.remove(loaded_quest)
                             break
                     print(Fore.YELLOW + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} - {i_rep} rep" + Fore.WHITE)
@@ -427,12 +474,15 @@ class Bot:
                 dropItemsName = [item["sName"] for item in dropItems.values() if "sName" in item]
                 print(Fore.YELLOW + f"Wheel: {dropItemsName}" + Fore.WHITE)
             elif cmd == "acceptQuest":
+                quest_id = data["QuestID"]
                 if data["bSuccess"] == 1:
-                    quest_id = data["QuestID"]
                     loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
                     if not str(quest_id) in str(loaded_quest_ids):
                         self.write_message(f"%xt%zm%getQuests%{self.areaId}%{quest_id}%")
                         self.do_wait(500)
+                elif data["bSuccess"] == 0:
+                    if quest_id not in self.failed_get_quest_datas:
+                        self.failed_get_quest_datas.append(quest_id)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
@@ -453,7 +503,7 @@ class Bot:
         elif msg.startswith("%") and msg.endswith("%"):
             if f"%server%" in msg:
                 print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {msg.split('%')[4]}" + Fore.RESET)
-            if f"%xt%server%-1%Profanity filter On.%" in msg:
+            if f"%xt%loginResponse%" in msg:
                 self.write_message(f"%xt%zm%firstJoin%1%")
                 self.write_message(f"%xt%zm%cmd%1%ignoreList%$clearAll%")
             elif "You joined" in msg:
@@ -496,13 +546,37 @@ class Bot:
                     text = msg[4]
                     sender = msg[5]
                     print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {sender} [WHISPER] : {text}" + Fore.WHITE)
-            elif f"%xt%uotls%-1%{self.player.USER}%afk:true%" in msg:
+            elif f"Your status is now Away From Keyboard" in msg:
+                print("Restart cmds on AFK...")
+                self.index = 0
                 pass
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
         for registered_quest_id in self.registered_auto_quest_ids:
             if self.can_turn_in_quest(registered_quest_id):
                 self.turn_in_quest(registered_quest_id)
+
+    async def read_server_in_background(self):
+        """Background task to read and handle messages."""
+        try:
+            while self.is_client_connected:
+                messages = await self.read_batch_async(self.client_socket)
+                if messages:
+                    for msg in messages:
+                        await self.handle_server_response(msg)
+                
+        except CustomError as e:
+            self.debug(f"Critical error encountered: {e}")
+            self.run = False  # Stop the bot
+        except Exception as e:
+            self.debug(f"Unexpected error in testasync: {e}")
+    
+    async def read_batch_async(self, conn):
+        """
+        Asynchronous version of read_batch to avoid blocking.
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.read_batch, conn)
 
     def read_batch(self, conn):
         message_builder = ""
@@ -643,7 +717,7 @@ class Bot:
             self.user_id = user.get("i")  # Get the id
             self.user_ids.append(self.user_id)  # Append to the list
             name = user.find("n").text  # Get the username
-            if name == self.player.USER:
+            if name.lower() == self.player.USER.lower():
                 self.username_id = self.user_id  # Store the ID of the target username
 
     def extract_new_user(self, xml_message: str):
@@ -668,13 +742,18 @@ class Bot:
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"
         self.player.CELL = cell
         self.player.PAD = pad
+        self.player.setPlayerPositionXY(0,0)
         self.write_message(msg)
 
-    def walk_to(self, x, y, speed = 8):
+    async def walk_to(self, x: int, y: int, speed = 8):
         self.write_message(f"%xt%zm%mv%{self.areaId}%{x}%{y}%{speed}%")
+        self.player.setPlayerPositionXY(x, y)
     
-    def find_best_cell(self, monster_name):
-        filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower()]
+    def find_best_cell(self, monster_name, byMostMonster: bool = True, byAliveMonster: bool = False):
+        if byMostMonster:
+            filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower()]
+        if byAliveMonster:
+            filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower() and mon.is_alive]
 
         if not filtered_monsters:
             return None

@@ -36,6 +36,9 @@ class Player:
         self.MAX_HP = 9999
         self.CURRENT_HP = 9999
         self.IS_IN_COMBAT = False
+        self.X: int = 0
+        self.Y: int= 0
+        self.AURAS = []
 
     def getInfo(self):
         url = "https://game.aq.com/game/api/login/now?"
@@ -98,9 +101,21 @@ class Player:
                 return False
         return True
 
-    def updateTime(self, skillNumber):
-        skillDetail = self.SKILLS[skillNumber]
-        self.SKILLUSED[skillNumber] = datetime.now() + timedelta(milliseconds=float(skillDetail["cd"]) + 1500)
+    def updateTime(self, skillNumber: int):
+        skill_detail = self.SKILLS[skillNumber]
+        cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION)
+        self._update_skill_time(skillNumber, cooldown, force_update= True)
+
+    def delayAllSkills(self, except_skill: int, delay_ms: float = 1000):
+        """this is to delay skill to prevent server warning 'Please slow down'"""
+        for skill_number in range(len(self.SKILLS)):
+            if except_skill != skill_number:
+                self._update_skill_time(skill_number, float(delay_ms))
+    
+    def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):
+        new_cooldown_time = datetime.now() + timedelta(milliseconds=time_offset_ms)
+        if not self.SKILLUSED.get(skill_number) or self.SKILLUSED[skill_number] < new_cooldown_time or force_update:
+            self.SKILLUSED[skill_number] = new_cooldown_time
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:
@@ -123,6 +138,12 @@ class Player:
     def get_item_inventory_by_id(self, itemId):
         for item in self.INVENTORY:
             if item.item_id == str(itemId):
+                return item
+        return None
+
+    def get_item_inventory_by_enhance_id(self, enh_pattern_id: int):
+        for item in self.INVENTORY:
+            if item.enh_pattern_id == enh_pattern_id:
                 return item
         return None
     
@@ -157,3 +178,48 @@ class Player:
                 invItemQty = item.qty
                 break
         return [checkOperator(invItemQty, qty, operator), invItemQty]
+    
+    def getPlayerPositionXY(self) -> list[int]:
+        return [self.X, self.Y]
+    
+    def setPlayerPositionXY(self, X: int, Y: int):
+        self.X = X
+        self.Y = Y
+
+    def getPlayerCell(self) -> list[str]:
+        return [self.CELL, self.PAD]
+
+    def addAura(self, auras:list):
+        timestamp = datetime.now()
+        for aura in auras:
+            duration = aura.get('dur', 0)
+            expiration_time = timestamp + timedelta(seconds=duration)
+            aura_details ={
+                'name': aura.get('nam'),
+                'type': aura.get('t'),
+                'duration': duration,
+                'source_spell': aura.get('spellOn', None),
+                'icon': aura.get('icon'),
+                'applied_time': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'expires_at': expiration_time.strftime('%Y-%m-%d %H:%M:%S'),
+            }
+            is_new = aura.get('isNew', False)
+            if is_new:
+                self.AURAS.append(aura_details)
+            else:
+                for existing_aura in self.AURAS:
+                    if existing_aura['name'] == aura_details['name']:
+                        existing_aura['applied_time'] = aura_details['applied_time']
+                        existing_aura['expires_at'] = aura_details['expires_at']
+                        break
+            # print(f"{is_new} Aura: {aura_details['name']}, Type: {aura_details['type']}, Duration: {aura_details['duration']} seconds, "
+            #     f"Source Spell: {aura_details['source_spell']}, Icon: {aura_details['icon']}, "
+            #     f"Applied: {aura_details['applied_time']}, Expires: {aura_details['expires_at']}")
+            # print()
+    
+    def removeAura(self, auraName: str):
+        for aura in self.AURAS[:]:
+            if aura['name'] == auraName:
+                self.AURAS.remove(aura)
+                # print(f"aura removed: {auraName}")
+                break

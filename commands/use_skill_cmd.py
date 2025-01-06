@@ -1,12 +1,13 @@
 from core.bot import Bot
 from abstracts.command import Command
 from model import Monster
+import asyncio
 
 class UseSkillCmd(Command):
     
     skip_delay = True
     
-    def __init__(self, index: int = 0, target_monsters: str = "*", hunt: bool = False):
+    def __init__(self, index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0):
         self.index = index
         self.target_monsters = target_monsters
     
@@ -40,13 +41,13 @@ class UseSkillCmd(Command):
                                     and monster.frame == bot.player.CELL \
                                     and monster.is_alive:
                                 priority_monsters_id.append(monster.mon_map_id)
-                            break
+                                break
                         else:
                             if monster.mon_name.lower() == target_monster.lower() \
                                     and monster.frame == bot.player.CELL \
                                     and monster.is_alive:
                                 priority_monsters_id.append(monster.mon_map_id)
-                            break
+                                break
                 # Check if the first index is one of the priority targets
                 if len(priority_monsters_id) > 0:
                     if not cell_monsters_id[0] in priority_monsters_id:
@@ -65,6 +66,8 @@ class UseSkillCmd(Command):
         elif skill["tgt"] == "f":
             bot.use_skill_to_player(bot.skillNumber, max_target)
         bot.canuseskill = False
+        await asyncio.sleep(1)
+        # bot.player.delayAllSkills(except_skill = self.index) # delay from cdreduction
         
     def to_string(self):
         # return f"UseSkill : {self.index}"
