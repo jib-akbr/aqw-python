@@ -400,6 +400,8 @@ async def bandits_correspondence(cmd: Command, qty: int = 3000):
 
 async def farm_mats(cmd: Command, item_to_farm: list[dict]):
     for item in item_to_farm:
+        if not cmd.isStillConnected():
+            return
         is_solo = item.get("is_solo", False)
         if is_solo:
             solo_class = cmd.getSoloClass()

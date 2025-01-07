@@ -23,7 +23,9 @@ def check_alive(func):
                 self.stopBot()
                 return
             time.sleep(1)  # Avoid busy-waiting
-
+        if not self.isStillConnected():
+            print("STOPPPPPPPP")
+            return
         return func(self, *args, **kwargs)
 
     @wraps(func)
@@ -40,9 +42,10 @@ def check_alive(func):
                 self.stopBot()
                 return
             await asyncio.sleep(1)  # Non-blocking wait
-
+        if not self.isStillConnected():
+            print("STOPPPPPPPP")
+            return
         return await func(self, *args, **kwargs)
-
     # Check if the function is async and use the appropriate wrapper
     return async_wrapper if iscoroutinefunction(func) else sync_wrapper
 
@@ -83,7 +86,7 @@ class Command:
     
     @check_alive
     async def ensure_accept_quest(self, quest_id: int) -> None:
-        while self.quest_not_in_progress(quest_id):
+        while self.quest_not_in_progress(quest_id) and self.isStillConnected():
             await self.accept_quest(quest_id)
             await self.sleep(1000)
             if quest_id in self.bot.failed_get_quest_datas:
@@ -92,7 +95,7 @@ class Command:
     
     @check_alive
     async def ensure_turn_in_quest(self, quest_id: int) -> None:
-        while self.quest_in_progress(quest_id):
+        while self.quest_in_progress(quest_id) and self.isStillConnected():
             await self.turn_in_quest(quest_id)
             await self.sleep(1000)
             if quest_id in self.bot.failed_get_quest_datas:
@@ -116,7 +119,7 @@ class Command:
             msg = f"%xt%zm%cmd%1%tfer%{self.bot.player.USER}%{mapName}%"
         self.bot.write_message(msg)
         count = 0
-        while self.bot.is_joining_map:
+        while self.bot.is_joining_map and self.isStillConnected():
             await asyncio.sleep(0.5)
             count += 1
             if count % 5 == 0 and self.is_not_in_map(mapName):
@@ -282,6 +285,8 @@ class Command:
     async def bank_to_inv(self, itemNames: Union[str, List[str]]) -> None:
         itemNames = itemNames if isinstance(itemNames, list) else [itemNames]
         for item in itemNames:
+            if not self.isStillConnected():
+                return
             item = self.bot.player.get_item_bank(item)        
             if item:
                 packet = f"%xt%zm%bankToInv%{self.bot.areaId}%{item.item_id}%{item.char_item_id}%"
@@ -305,6 +310,8 @@ class Command:
     async def inv_to_bank(self, itemNames: Union[str, List[str]]) -> None:
         itemNames = itemNames if isinstance(itemNames, list) else [itemNames]
         for item in itemNames:
+            if not self.isStillConnected():
+                return
             item = self.bot.player.get_item_inventory(item)        
             if item:
                 packet = f"%xt%zm%bankFromInv%{self.bot.areaId}%{item.item_id}%{item.char_item_id}%"

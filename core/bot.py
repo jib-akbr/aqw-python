@@ -90,16 +90,18 @@ class Bot:
             if self.isScriptable:
                 asyncio.create_task(self.read_server_in_background())
 
-                while self.is_char_load_complete is False:
-                    await asyncio.sleep(0.01)
-                
-                if not self.is_register_quest_task_running:
-                    self.run_register_quest_task()
-                    self.is_register_quest_task_running = True
-                
-                await botMain(self)
+                while self.is_client_connected:
+                    while self.is_char_load_complete is False:
+                        await asyncio.sleep(0.01)
+                    
+                    if not self.is_register_quest_task_running:
+                        self.run_register_quest_task()
+                        self.is_register_quest_task_running = True
+                    
+                    await botMain(self)
+                    self.stop_bot()
                 if self.auto_relogin:
-                    await self.relogin_and_restart()
+                    await self.relogin_and_restart(async_bot=botMain)
             else:
                 await self.run_commands()
             
@@ -130,7 +132,7 @@ class Bot:
         if self.player.getInfo():
             self.server_info = self.player.getServerInfo(server)
             
-    async def relogin_and_restart(self):
+    async def relogin_and_restart(self, async_bot= None):
         self.stop_bot()
         self.index = 0
         self.is_char_load_complete = False
@@ -142,7 +144,10 @@ class Bot:
         try:
             print("Restarting bot in 10 secs...")
             await asyncio.sleep(10)
-            await self.start_bot()
+            if self.isScriptable and async_bot and self.auto_relogin:
+                await self.start_bot(async_bot)
+            else:
+                await self.start_bot()
         except Exception as e:
             print(f"Error during restarting bot: {e}")
         
@@ -565,10 +570,10 @@ class Bot:
                         await self.handle_server_response(msg)
                 
         except CustomError as e:
-            self.debug(f"Critical error encountered: {e}")
+            print(f"Critical error encountered: {e}")
             self.run = False  # Stop the bot
         except Exception as e:
-            self.debug(f"Unexpected error in testasync: {e}")
+            print(f"Unexpected error in testasync: {e}")
     
     async def read_batch_async(self, conn):
         """
