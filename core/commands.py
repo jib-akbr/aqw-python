@@ -21,6 +21,7 @@ def check_alive(func):
                 break
             if time.time() - start_time > timeout:
                 self.stopBot()
+                return
             time.sleep(1)  # Avoid busy-waiting
 
         return func(self, *args, **kwargs)
@@ -37,6 +38,7 @@ def check_alive(func):
                 break
             if time.time() - start_time > timeout:
                 self.stopBot()
+                return
             await asyncio.sleep(1)  # Non-blocking wait
 
         return await func(self, *args, **kwargs)
@@ -56,6 +58,12 @@ class Command:
     
     def shouldFollowPlayer(self) -> bool:
         return self.bot.follow_player and self.bot.followed_player_cell != self.bot.player.CELL
+
+    def getFarmClass(self) -> str:
+        return None if self.bot.farmClass == "" else self.bot.farmClass
+    
+    def getSoloClass(self) -> str:
+        return None if self.bot.soloClass == "" else self.bot.soloClass
 
     def stopBot(self, msg: str = ""):
         print(Fore.RED + msg + Fore.RESET)
@@ -163,8 +171,9 @@ class Command:
         if skill["tgt"] == "h": 
             priority_monsters_id = []
             if hunt and len(target_monsters.split(",")) == 1 and target_monsters != "*":
-                await self.hunt_monster(target_monsters, byAliveMonster=True)
+                await self.jump_to_monster(target_monsters, byAliveMonster=True)
             cell_monsters_id = [mon.mon_map_id for mon in self.bot.monsters if mon.frame == self.bot.player.CELL and mon.is_alive]
+            cell_monsters = [mon for mon in self.bot.monsters if mon.frame == self.bot.player.CELL and mon.is_alive]
             final_ids = []
             if target_monsters != "*":
                 # Mapping priority_monsters_id
@@ -201,7 +210,8 @@ class Command:
                         final_ids.append(monster_id)
                         seen.add(monster_id)
             else:
-                final_ids = cell_monsters_id
+                cell_monsters.sort(key=lambda m: m.current_hp)
+                final_ids = [mon.mon_map_id for mon in cell_monsters]
             if scroll_id:
                 self.bot.use_scroll(final_ids, max_target, scroll_id)
             else:
@@ -270,6 +280,7 @@ class Command:
     
     @check_alive
     async def bank_to_inv(self, itemNames: Union[str, List[str]]) -> None:
+        itemNames = itemNames if isinstance(itemNames, list) else [itemNames]
         for item in itemNames:
             item = self.bot.player.get_item_bank(item)        
             if item:
@@ -287,6 +298,29 @@ class Command:
                 for itemBank in self.bot.player.BANK:
                     if itemBank.item_name == item.item_name:
                         self.bot.player.BANK.remove(itemBank)
+                        break
+                await asyncio.sleep(1)
+    
+    @check_alive
+    async def inv_to_bank(self, itemNames: Union[str, List[str]]) -> None:
+        itemNames = itemNames if isinstance(itemNames, list) else [itemNames]
+        for item in itemNames:
+            item = self.bot.player.get_item_inventory(item)        
+            if item:
+                packet = f"%xt%zm%bankFromInv%{self.bot.areaId}%{item.item_id}%{item.char_item_id}%"
+                self.bot.write_message(packet)
+                is_exist = False
+                for itemBank in self.bot.player.BANK:
+                    if itemBank.item_name == item.item_name:
+                        self.bot.player.BANK.remove(itemBank)
+                        self.bot.player.BANK.append(item)
+                        is_exist = True
+                        break
+                if not is_exist:
+                    self.bot.player.BANK.append(item)
+                for itemInv in self.bot.player.INVENTORY:
+                    if itemInv.item_name == item.item_name:
+                        self.bot.player.INVENTORY.remove(itemInv)
                         break
                 await asyncio.sleep(1)
 
@@ -377,6 +411,17 @@ class Command:
     async def walk_to(self, X: int, Y: int, speed: int = 8):
         await self.bot.walk_to(X, Y, speed)
         await self.sleep(200)
+
+    def start_aggro_by_cell(self, cells: list[str], delay_ms : int = 500):
+        mons_id: list[str] = []
+        for monster in self.bot.monsters:
+            if monster.frame in cells:
+                mons_id.append(str(monster.mon_map_id))
+
+        if len(mons_id) == 0:
+            return
+        
+        self.start_aggro(mons_id, delay_ms)
 
     def start_aggro(self, mons_id: list[str], delay_ms: int = 500):
         self.stop_aggro()
