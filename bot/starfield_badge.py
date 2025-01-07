@@ -7,6 +7,8 @@ async def main(bot: Bot):
 
     await cmd.bank_to_inv("Stars Destroyed")
 
+    cmd.add_drop("Stars Destroyed")
+
     await cmd.join_map("starfield")
 
     if bot.farmClass:
