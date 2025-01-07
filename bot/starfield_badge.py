@@ -12,6 +12,8 @@ async def main(bot: Bot):
 
     await cmd.join_map("starfield")
 
+    await cmd.jump_cell("r3", "Spawn")
+
     if bot.farmClass:
         await cmd.equip_item(bot.farmClass)
 
