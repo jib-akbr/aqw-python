@@ -18,8 +18,14 @@ async def main(bot: Bot):
 
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
-    while cmd.is_in_inventory("Stars Destroyed", item_qty, "<") and cmd.isStillConnected():
+    counter = 0
+    while cmd.is_in_inventory(item_name, item_qty, "<") and cmd.isStillConnected():
+        if counter >= 50:
+            cmd.farming_logger(item_name, item_qty)
+            counter = 0
         await cmd.use_skill(skill_list[skill_index])
         skill_index += 1
         if skill_index >= len(skill_list):
             skill_index = 0
+        counter += 1
+
