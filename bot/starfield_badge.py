@@ -4,10 +4,11 @@ from core.commands import Command
 async def main(bot: Bot):
     cmd = Command(bot)
     item_qty = 1_000_000
+    item_name = "Stars Destroyed"
 
-    await cmd.bank_to_inv("Stars Destroyed")
+    await cmd.bank_to_inv(item_name)
 
-    cmd.add_drop("Stars Destroyed")
+    cmd.add_drop(item_name)
 
     await cmd.join_map("starfield")
 
@@ -28,4 +29,3 @@ async def main(bot: Bot):
         if skill_index >= len(skill_list):
             skill_index = 0
         counter += 1
-
