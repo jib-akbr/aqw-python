@@ -142,8 +142,8 @@ class Bot:
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
         try:
-            print("Restarting bot in 10 secs...")
-            await asyncio.sleep(10)
+            print("Restarting bot in 35 secs...")
+            await asyncio.sleep(35)
             if self.isScriptable and async_bot and self.auto_relogin:
                 await self.start_bot(async_bot)
             else:
