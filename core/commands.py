@@ -1,4 +1,3 @@
-from core.bot import Bot
 import asyncio
 from typing import List, Union
 import time
@@ -44,7 +43,8 @@ def check_alive(func):
     return async_wrapper if iscoroutinefunction(func) else sync_wrapper
 
 class Command:
-    def __init__(self, bot: Bot):
+    def __init__(self, bot):
+        from core.bot import Bot
         self.bot = bot
 
     def isPlayerAlive(self) -> bool:

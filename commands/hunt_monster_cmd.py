@@ -1,15 +1,16 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 from model import Monster
 
 # Command for search monster and auto jump cell to the monster
-class HuntMonsterCmd(Command):
+class HuntMonsterCmd(BaseCommand):
     
     def __init__(self, monsterName: str, mostMonsters: bool = False):
         self.monsterName = monsterName
         self.mostMonsters = mostMonsters
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         # Check if monster in current cell is exist and alive
         for monster in bot.monsters:
             if monster.mon_name.lower() == self.monsterName.lower() \

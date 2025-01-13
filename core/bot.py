@@ -1,6 +1,7 @@
 import socket
 from core.player import Player
 from core.utils import normalize
+from core.commands import Command
 import re
 import json
 import time
@@ -53,6 +54,7 @@ class Bot:
         self.is_joining_map = False
         self.is_client_connected = False
         
+        self.command = Command(self)
         self.wait_ms = 0
         self.player = None
         self.cmds = []
@@ -205,7 +207,7 @@ class Bot:
 
     async def handle_command(self, command):
         if command.skip_delay: # when skip_delay, we execute the cmd first before print its text
-            await command.execute(self)
+            await command.execute(self, self.command)
         if self.showLog: # print text
             cmd_string = command.to_string()
             if cmd_string:
@@ -215,7 +217,7 @@ class Bot:
                 else:
                     print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.WHITE)
         if not command.skip_delay:  # when not skip delay, execute cmd after print its text
-            await command.execute(self)
+            await command.execute(self, self.command)
             await asyncio.sleep(self.cmdDelay/1000)
         return
     

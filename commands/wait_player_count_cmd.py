@@ -1,12 +1,13 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class WaitPlayerCountCmd(Command):
+class WaitPlayerCountCmd(BaseCommand):
     
     def __init__(self, playerCount: int):
         self.playerCount = playerCount
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         if len(bot.user_ids) < self.playerCount:
             bot.index -= 1
         

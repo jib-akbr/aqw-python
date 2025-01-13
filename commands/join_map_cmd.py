@@ -1,13 +1,15 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class JoinMapCmd(Command):
+class JoinMapCmd(BaseCommand):
     
     def __init__(self, mapName: str, roomNumber: int = None):
         self.mapName = mapName
         self.roomNumber = roomNumber
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         if bot.strMapName.lower() == self.mapName.lower():
             return
         bot.is_joining_map = True

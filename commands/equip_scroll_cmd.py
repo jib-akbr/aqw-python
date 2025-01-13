@@ -1,15 +1,16 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 import asyncio
 
-class EquipScrollCmd(Command):
+class EquipScrollCmd(BaseCommand):
     
     #item_type: scroll, elixir, potion
     def __init__(self, item_name: str, item_type: str = "scroll"):
         self.item_name = item_name
         self.item_type = item_type
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         await bot.ensure_leave_from_combat()
             
         for item in bot.player.INVENTORY:
