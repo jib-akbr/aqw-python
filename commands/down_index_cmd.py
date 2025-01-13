@@ -8,7 +8,7 @@ class DownIndexCmd(Command):
         self.value = value
     
     async def execute(self, bot: Bot):
-        bot.index += self.value
+        bot.index += self.value-1
         
     def to_string(self):
         # return f"Down Index : {self.value}"

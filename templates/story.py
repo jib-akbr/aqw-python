@@ -70,7 +70,7 @@ def do_story_quest(
     label_cleared = f"Quest {quest_id} is cleared"
     return [
         cmd.AcceptQuestCmd(quest_id),
-        cmd.SleepCmd(1000),
+        cmd.SleepCmd(500),
         cmd.QuestNotInProgressCmd(quest_id),
         cmd.ToLabelCmd(label_cleared),
         *quest_reqs_cmds,

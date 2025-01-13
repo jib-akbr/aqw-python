@@ -9,8 +9,12 @@ class ToLabelCmd(Command):
     
     async def execute(self, bot: Bot):
         for i, cmd in enumerate(bot.cmds):
-            if cmd.to_string() == f"[{self.label}]":
-                bot.index = i
+            try:
+                if cmd.to_string() == f"[{self.label}]":
+                    bot.index = i
+            except:
+                print(f'err: {cmd.__class__.__name__} dont hv to_string() method')
+                pass
         
     def to_string(self):
         return f"To label : [{self.label}]"
