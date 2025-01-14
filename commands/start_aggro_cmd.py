@@ -3,13 +3,13 @@ from core.commands import Command
 from abstracts.base_command import BaseCommand
 from colorama import Fore 
 
-class AcceptQuestCmd(BaseCommand):
+class StartAggroCmd(BaseCommand):
     
-    def __init__(self, quest_id: int):
-        self.quest_id = quest_id
+    def __init__(self, mon_ids: []):
+        self.mon_ids = mon_ids
     
     async def execute(self, bot: Bot, cmd: Command):
-        bot.accept_quest(self.quest_id)
+        cmd.start_aggro(self.mon_ids)
         
     def to_string(self):
-        return f"Accept quest : {self.quest_id}"
+        return f"Start aggro : {self.mon_ids}"

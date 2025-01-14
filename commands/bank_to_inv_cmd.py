@@ -1,14 +1,15 @@
 from typing import List, Union
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 import asyncio
 
-class BankToInvCmd(Command):
+class BankToInvCmd(BaseCommand):
     
     def __init__(self, itemName: Union[str, List[str]]):
         self.itemNames = itemName if isinstance(itemName, list) else [itemName]
 
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         for item in self.itemNames:
             item = bot.player.get_item_bank(item)        
             if item:

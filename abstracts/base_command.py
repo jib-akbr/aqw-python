@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from core.bot import Bot
+from core.commands import Command
 
-class Command(ABC):
+class BaseCommand(ABC):
     
     skip_delay = False
     
     @abstractmethod
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         pass
         
     @abstractmethod
