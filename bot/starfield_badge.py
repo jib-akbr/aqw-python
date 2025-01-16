@@ -10,7 +10,7 @@ async def main(bot: Bot):
 
     cmd.add_drop(item_name)
 
-    await cmd.join_map("starfield")
+    await cmd.join_map("starfield", 99999)
 
     await cmd.jump_cell("r3", "Spawn")
 
@@ -23,7 +23,7 @@ async def main(bot: Bot):
     skill_index = 0
     counter = 0
     while cmd.is_in_inventory(item_name, item_qty, "<") and cmd.isStillConnected():
-        if counter >= 50:
+        if counter >= 100:
             cmd.farming_logger(item_name, item_qty)
             counter = 0
         await cmd.use_skill(skill_list[skill_index])
@@ -31,3 +31,4 @@ async def main(bot: Bot):
         if skill_index >= len(skill_list):
             skill_index = 0
         counter += 1
+        await cmd.sleep(100)
