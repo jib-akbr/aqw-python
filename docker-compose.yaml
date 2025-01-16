@@ -3,11 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: builder
-    image: my-python-app:latest
+    image: aqw-bot:latest
     volumes:
       - .:/app
-    command: ["python", "multi_account_with_env.py"]
+    command: ["python", "main-web.py"]
     environment:
       - PYTHONUNBUFFERED=1
     ports:

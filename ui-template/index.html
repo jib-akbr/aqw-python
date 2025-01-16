@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bot Logs Viewer</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+      let socket;
+      let currentAccount = "combined";
+
+      function switchTab(account) {
+        currentAccount = account;
+        document
+          .querySelectorAll(".tab")
+          .forEach((tab) => tab.classList.remove("active"));
+        document.querySelector(`#tab-${account}`).classList.add("active");
+        document.getElementById("log-container").innerHTML = "";
+        socket.emit("join", { account: account });
+      }
+
+      function setupSocket() {
+        socket = io();
+        socket.on("log_update", function (data) {
+          if (data.clear) {
+            document.getElementById("log-container").innerHTML = ""; // Clear existing logs
+          }
+          if (data.message) {
+            const logContainer = document.getElementById("log-container");
+            logContainer.innerHTML += data.message + "<br>";
+            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+          }
+        });
+      }
+
+      window.onload = function () {
+        setupSocket();
+        switchTab("combined");
+      };
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="tabs">
+        <div
+          id="tab-combined"
+          class="tab active"
+          onclick="switchTab('combined')"
+        >
+          Combined Logs
+        </div>
+        {% for account in accounts %}
+        <div
+          id="tab-{{ account }}"
+          class="tab"
+          onclick="switchTab('{{ account }}')"
+        >
+          {{ account }}
+        </div>
+        {% endfor %}
+      </div>
+      <div id="log-container" class="log-container">Loading logs...</div>
+    </div>
+  </body>
+</html>

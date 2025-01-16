@@ -1,13 +1,14 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class IsInMapCmd(Command):
+class IsInMapCmd(BaseCommand):
     skip_delay = True
     
     def __init__(self, mapName: str):
         self.mapName = mapName
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         if(self.mapName.lower() != bot.strMapName.lower()):
             bot.index += 1
         

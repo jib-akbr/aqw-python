@@ -1,13 +1,14 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 from colorama import Fore
 
-class StopBotCmd(Command):
+class StopBotCmd(BaseCommand):
     
     def __init__(self, msg: str = ""):
         self.msg = msg
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         print(Fore.RED + self.msg + Fore.RESET)
         bot.stop_bot()
         

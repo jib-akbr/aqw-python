@@ -1,7 +1,8 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class IsInBankCmd(Command):
+class IsInBankCmd(BaseCommand):
     skip_delay = True
     
     def __init__(self, itemName: str, itemQty: int = 1, operator: str = ">="):
@@ -10,7 +11,7 @@ class IsInBankCmd(Command):
         self.operator = operator
         self.inBank = [False, 0]
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         self.inBank = bot.player.isInBank(self.itemName, self.itemQty, self.operator)
         if(self.inBank[0] == False):
             bot.index += 1

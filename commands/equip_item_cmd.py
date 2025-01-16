@@ -1,13 +1,14 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 import asyncio
 
-class EquipItemCmd(Command):
+class EquipItemCmd(BaseCommand):
     
     def __init__(self, item_name: str):
         self.item_name = item_name
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         await bot.ensure_leave_from_combat()
         
         is_equipped = False
