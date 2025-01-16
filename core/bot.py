@@ -77,6 +77,22 @@ class Bot:
         self.is_register_quest_task_running = False
         self.is_aggro_handler_task_running = False
         self.followed_player_cell = None
+        self.subscribers = []
+
+    def subscribe(self, callback):
+        """Subscribe to messages."""
+        if callable(callback):
+            self.subscribers.append(callback)
+
+    def unsubscribe(self, callback):
+        """Unsubscribe from messages."""
+        if callback in self.subscribers:
+            self.subscribers.remove(callback)
+
+    def notify_subscribers(self, message):
+        """Notify all subscribers."""
+        for subscriber in self.subscribers:
+            subscriber(message)
         
     def set_login_info(self, username, password, server):
         self.username = username
@@ -231,6 +247,7 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
+        self.notify_subscribers(msg)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
 
@@ -319,7 +336,7 @@ class Bot:
                         animsStr = anims[0].get("animStr")
                         if animsStr == self.skillAnim:
                             self.canuseskill = True
-                            self.player.updateTime(self.skillNumber)
+                            # self.player.updateTime(self.skillNumber)
                     msg = anims[0].get("msg")
                     if msg:
                         pass
@@ -454,10 +471,11 @@ class Bot:
                         else:
                             playerTempItem.qty -= iQty
             elif cmd == "event":
-                print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
-                if data["args"]["zoneSet"]  == "A":
-                    if self.strMapName.lower() == "ultraspeaker":
-                        await self.walk_to(100, 321)
+                pass
+                # print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
+                # if data["args"]["zoneSet"]  == "A":
+                #     if self.strMapName.lower() == "ultraspeaker":
+                #         await self.walk_to(100, 321)
             elif cmd == "ccqr":
                 quest_id = data.get('QuestID', None)
                 s_name = data.get('sName', None)

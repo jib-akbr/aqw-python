@@ -130,9 +130,12 @@ class Command:
 
     @check_alive
     async def jump_cell(self, cell: str, pad: str) -> None:
-        if self.bot.player.CELL.lower() != cell or self.bot.player.PAD.lower() != pad:
+        if self.bot.player.CELL.lower() != cell.lower() or self.bot.player.PAD.lower() != pad.lower():
             self.bot.jump_cell(cell, pad)
         await asyncio.sleep(1)
+    
+    def is_not_in_cell(self, cell: str) -> bool:
+        return self.bot.player.CELL.lower() != cell.lower()
     
     @check_alive
     async def jump_to_monster(self, monsterName: str, byMostMonster: bool = True, byAliveMonster: bool = False) -> None:
@@ -162,7 +165,7 @@ class Command:
         
     @check_alive
     async def use_skill(self,  index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0) -> None:
-        if not self.bot.player.canUseSkill(int(index)) and not self.bot.canuseskill:
+        if not self.bot.player.canUseSkill(int(index)):
             self.bot.debug(f"Skill {index} not ready yet")
             return
 
@@ -215,15 +218,16 @@ class Command:
             else:
                 cell_monsters.sort(key=lambda m: m.current_hp)
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
-            if scroll_id:
+            if scroll_id != 0 and index == 5:
                 self.bot.use_scroll(final_ids, max_target, scroll_id)
             else:
                 self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
         self.bot.canuseskill = False
-        await asyncio.sleep(1)
-        # self.bot.player.delayAllSkills(except_skill = index)
+        # await asyncio.sleep(1)
+        self.bot.player.delayAllSkills(except_skill=index)
+        self.bot.player.updateTime(index)
 
     @check_alive
     async def sleep(self,  milliseconds: int) -> None:
@@ -357,7 +361,7 @@ class Command:
     async def equip_scroll(self, item_name: str, item_type: str = "scroll"):
         for item in self.bot.player.INVENTORY:
             if item.item_name.lower() == item_name.lower():
-                packet = f"%xt%zm%geia%%{self.bot.areaId}%{item_type}%{item.s_meta}%{item.item_id}%"
+                packet = f"%xt%zm%geia%{self.bot.areaId}%{item_type}%{item.s_meta}%{item.item_id}%"
                 self.bot.write_message(packet)
                 await asyncio.sleep(1)
                 break
@@ -387,6 +391,17 @@ class Command:
                 elif monster == "*":
                     return True
         return False
+    
+    def get_monster_hp(self, monster: str) -> int:
+        if monster.startswith('id.'):
+            monster = monster.split('.')[1]
+        for mon in self.bot.monsters:
+            if mon.mon_name.lower() == monster.lower() or mon.mon_map_id == monster:
+                return mon.current_hp
+            elif monster == "*":
+                return mon.current_hp
+        # this mean not get the desired monster
+        return -1
 
     @check_alive
     async def get_map_item(self, map_item_id: int, qty: int = 1):
