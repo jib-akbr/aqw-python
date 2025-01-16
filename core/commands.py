@@ -75,6 +75,7 @@ class Command:
     
     @check_alive
     async def goto_player(self, player_name: str):
+        await self.bot.ensure_leave_from_combat(always=True)
         self.bot.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
         await self.sleep(1000)
     
@@ -132,6 +133,7 @@ class Command:
     async def jump_cell(self, cell: str, pad: str) -> None:
         if self.bot.player.CELL.lower() != cell.lower() or self.bot.player.PAD.lower() != pad.lower():
             self.bot.jump_cell(cell, pad)
+            print(f"jump cell: {cell} {pad}")
         await asyncio.sleep(1)
     
     def is_not_in_cell(self, cell: str) -> bool:
