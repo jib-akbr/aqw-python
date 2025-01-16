@@ -145,4 +145,3 @@ async def main(bot: Bot):
 
         await cmd.ensure_turn_in_quest(4432)
 
-    print(cmd.isStillConnected())

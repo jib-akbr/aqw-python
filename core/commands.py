@@ -51,7 +51,7 @@ def check_alive(func):
 class Command:
     def __init__(self, bot):
         from core.bot import Bot
-        self.bot = bot
+        self.bot: Bot = bot
 
     def isPlayerAlive(self) -> bool:
         return not self.bot.player.ISDEAD
