@@ -106,7 +106,7 @@ class Player:
         cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION)
         self._update_skill_time(skillNumber, cooldown)
 
-    def delayAllSkills(self, except_skill: int, delay_ms: float = 1000):
+    def delayAllSkills(self, except_skill: int, delay_ms: float = 1500):
         """this is to delay skill to prevent server warning 'Please slow down'"""
         if except_skill == 0:
             return
