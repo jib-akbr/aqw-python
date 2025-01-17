@@ -571,9 +571,13 @@ class Bot:
                     sender = msg[5]
                     print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {sender} [WHISPER] : {text}" + Fore.WHITE)
             elif f"Your status is now Away From Keyboard" in msg:
-                print("Restart cmds on AFK...")
-                self.index = 0
-                pass
+                if self.isScriptable and self.auto_relogin:
+                    print("Relogin and restart bot on AFK...")
+                    self.stop_bot()
+                elif not self.isScriptable:
+                    print("Restart cmds on AFK...")
+                    self.index = 0
+                    pass
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
         for registered_quest_id in self.registered_auto_quest_ids:
