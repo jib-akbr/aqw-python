@@ -228,7 +228,7 @@ class Command:
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
         self.bot.canuseskill = False
         # await asyncio.sleep(1)
-        self.bot.player.delayAllSkills(except_skill=index)
+        self.bot.player.delayAllSkills(except_skill=index, delay_ms=self.bot.skill_delay_ms)
         self.bot.player.updateTime(index)
 
     @check_alive
