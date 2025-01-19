@@ -555,7 +555,7 @@ class Bot:
                 msg = msg.split('%')
                 text = msg[4]
                 print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
-                if "Your game client is spamming the server" in msg:
+                if "spamming the server" in text:
                     if self.auto_adjust_skill_delay:
                         self.skill_delay_ms += self.adjust_skill_delay_by_ms
                         self.check_spam_time = time.time()
