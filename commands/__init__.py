@@ -35,3 +35,5 @@ from .quest_in_progress_cmd import QuestInProgressCmd
 from .quest_not_in_progress_cmd import QuestNotInProgressCmd
 from .is_in_map_cmd import IsInMapCmd
 from .is_not_in_map_cmd import IsNotInMapCmd
+from .start_aggro_cmd import StartAggroCmd
+from .stop_aggro_cmd import StopAggroCmd

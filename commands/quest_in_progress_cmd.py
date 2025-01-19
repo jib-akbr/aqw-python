@@ -1,13 +1,14 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class QuestInProgressCmd(Command):
+class QuestInProgressCmd(BaseCommand):
     skip_delay = True
     
     def __init__(self, questId: int):
         self.questId = questId
 
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in bot.loaded_quest_datas]
         if not str(self.questId) in str(loaded_quest_ids):
             bot.index += 1

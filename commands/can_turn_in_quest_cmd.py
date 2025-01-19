@@ -1,13 +1,14 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class CanTurnInQuestCmd(Command):
+class CanTurnInQuestCmd(BaseCommand):
     skip_delay = True
     
     def __init__(self, questId: int):
         self.questId = questId
 
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         if(bot.can_turn_in_quest(self.questId) == False):
             bot.index += 1
         

@@ -1,15 +1,16 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 import asyncio
 
-class BuyItemCmd(Command):
+class BuyItemCmd(BaseCommand):
     
     def __init__(self, item_name: str, shop_id: int, qty: int = 1):
         self.item_name = item_name
         self.shop_id = shop_id
         self.qty = qty
     
-    async def execute(self, bot: Bot):  
+    async def execute(self, bot: Bot, cmd: Command):  
         await bot.ensure_leave_from_combat()
                   
         shop = None

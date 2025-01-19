@@ -1,13 +1,14 @@
 from core.bot import Bot
-from abstracts.command import Command
+from core.commands import Command
+from abstracts.base_command import BaseCommand
 
-class InvToBankCmd(Command):
+class InvToBankCmd(BaseCommand):
     skip_delay = True
     
     def __init__(self, itemName: str):
         self.itemName = itemName
     
-    async def execute(self, bot: Bot):
+    async def execute(self, bot: Bot, cmd: Command):
         item = bot.player.get_item_inventory(itemName=self.itemName)        
         if item:
             packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item.item_id}%{item.char_item_id}%"
