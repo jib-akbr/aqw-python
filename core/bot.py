@@ -19,6 +19,7 @@ from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
+import time
 
 class Bot:
 
@@ -35,7 +36,8 @@ class Bot:
             isScriptable: bool = False,
             farmClass: str = None,
             soloClass: str = None,
-            restartOnAFK: bool = False
+            restartOnAFK: bool = False,
+            autoAdjustSkillDelay: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -80,6 +82,11 @@ class Bot:
         self.is_aggro_handler_task_running = False
         self.followed_player_cell = None
         self.subscribers = []
+
+        self.auto_adjust_skill_delay = autoAdjustSkillDelay
+        self.skill_delay_ms = 1500
+        self.adjust_skill_delay_by_ms = 500
+        self.check_spam_time = None
 
     def subscribe(self, callback):
         """Subscribe to messages."""
@@ -249,6 +256,10 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
+        if self.check_spam_time:
+            if (time.time() - self.check_spam_time) > 300:
+                self.check_spam_time = None
+                self.skill_delay_ms -= self.adjust_skill_delay_by_ms
         self.notify_subscribers(msg)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
@@ -537,6 +548,10 @@ class Bot:
                 msg = msg.split('%')
                 text = msg[4]
                 print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
+                if "Your game client is spamming the server" in msg:
+                    if self.auto_adjust_skill_delay:
+                        self.skill_delay_ms += self.adjust_skill_delay_by_ms
+                        self.check_spam_time = time.time()
             elif "exitArea" in msg:
                 if msg.split('%')[5].lower() == self.follow_player.lower():
                     self.followed_player_cell = None
