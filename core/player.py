@@ -104,12 +104,15 @@ class Player:
     def updateTime(self, skillNumber: int):
         skill_detail = self.SKILLS[skillNumber]
         cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION)
-        self._update_skill_time(skillNumber, cooldown, force_update= True)
+        self._update_skill_time(skillNumber, cooldown)
 
-    def delayAllSkills(self, except_skill: int, delay_ms: float = 1000):
+    def delayAllSkills(self, except_skill: int, delay_ms: float = 1500):
         """this is to delay skill to prevent server warning 'Please slow down'"""
+        if except_skill == 0:
+            return
         for skill_number in range(len(self.SKILLS)):
-            if except_skill != skill_number:
+            if except_skill != skill_number and skill_number != 0:
+                # print(f"set delay for skill: {skill_number}, except: {except_skill}")
                 self._update_skill_time(skill_number, float(delay_ms))
     
     def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):

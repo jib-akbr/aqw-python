@@ -14,36 +14,47 @@ async def hunt_item(
         most_monster: bool = False,
         farming_logger: bool = False,
         hunt: bool = False,
-        auto_equip_class: bool = False,
+        skill_list: list[int] = [0,1,2,0,3,4]
     ):
     if cmd.is_in_bank(item_name):
-        cmd.bank_to_inv(item_name)
+        await cmd.bank_to_inv(item_name)
 
     if (cmd.is_in_inventory(item_name, item_qty, operator=">=") or cmd.is_in_inventory(item_name, item_qty, operator=">=", isTemp=True)):
         return
-    
-    if auto_equip_class:
-        if cmd.bot.farmClass:
-            await cmd.equip_item(cmd.bot.farmClass)
 
-    if cmd.is_not_in_map(map_name):
+    cmd.add_drop(item_name)
+    
+    while cmd.is_not_in_map(map_name):
         await cmd.join_map(map_name, room_number)
+        await cmd.sleep(1000)
 
     if cell:
         hunt = False
-        await cmd.jump_cell(cell, pad)
+        while cmd.is_not_in_cell(cell):
+            await cmd.jump_cell(cell, pad)
+            await cmd.sleep(1000)
     else:
-        await cmd.jump_to_monster(monster_name, most_monster)
+        while cmd.is_not_in_cell(cell):
+            await cmd.jump_to_monster(monster_name, most_monster)
+            await cmd.sleep(1000)
 
     if farming_logger:
         cmd.farming_logger(item_name, item_qty)
 
+    skill_list = skill_list
+    skill_index = 0
+
     while cmd.isStillConnected():
         if cmd.is_in_inventory(item_name, item_qty, operator=">=") or cmd.is_in_inventory(item_name, item_qty, operator=">=", isTemp=True):
             await cmd.leave_combat()
-            return
+            break
         
-        await attack_script(cmd, monster_name, hunt)
+        await cmd.use_skill(skill_list[skill_index], monster_name, hunt)
+        skill_index += 1
+        if skill_index >= len(skill_list):
+            skill_index = 0
+        await cmd.sleep(100)
+    return
 
 async def kill_quest(
         cmd: Command,
