@@ -10,6 +10,11 @@ class ItemType(Enum):
     FLOOR_ITEM = "hi"
     PET = "pe"
     HOUSE = "ho"
+    
+class ScrollType(Enum):  
+    SCROLL = "scroll"  
+    ELIXIR = "elixir"  
+    POTION = "potion" 
         
 class ItemInventory:
     def __init__(self, json_data):
