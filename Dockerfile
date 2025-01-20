@@ -22,4 +22,4 @@ COPY --from=builder /app /app
 
 RUN rm -rf /app/.git /app/tests /app/docs
 
-CMD ["python", "start_point.py"]
+CMD ["python", "multi_account_with_env.py"]

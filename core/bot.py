@@ -79,6 +79,22 @@ class Bot:
         self.is_register_quest_task_running = False
         self.is_aggro_handler_task_running = False
         self.followed_player_cell = None
+        self.subscribers = []
+
+    def subscribe(self, callback):
+        """Subscribe to messages."""
+        if callable(callback):
+            self.subscribers.append(callback)
+
+    def unsubscribe(self, callback):
+        """Unsubscribe from messages."""
+        if callback in self.subscribers:
+            self.subscribers.remove(callback)
+
+    def notify_subscribers(self, message):
+        """Notify all subscribers."""
+        for subscriber in self.subscribers:
+            subscriber(message)
         
     def set_login_info(self, username, password, server):
         self.username = username
@@ -92,16 +108,18 @@ class Bot:
             if self.isScriptable:
                 asyncio.create_task(self.read_server_in_background())
 
-                while self.is_char_load_complete is False:
-                    await asyncio.sleep(0.01)
-                
-                if not self.is_register_quest_task_running:
-                    self.run_register_quest_task()
-                    self.is_register_quest_task_running = True
-                
-                await botMain(self)
+                while self.is_client_connected:
+                    while self.is_char_load_complete is False:
+                        await asyncio.sleep(0.01)
+                    
+                    if not self.is_register_quest_task_running:
+                        self.run_register_quest_task()
+                        self.is_register_quest_task_running = True
+                    
+                    await botMain(self)
+                    self.stop_bot()
                 if self.auto_relogin:
-                    await self.relogin_and_restart()
+                    await self.relogin_and_restart(async_bot=botMain)
             else:
                 await self.run_commands()
             
@@ -132,7 +150,7 @@ class Bot:
         if self.player.getInfo():
             self.server_info = self.player.getServerInfo(server)
             
-    async def relogin_and_restart(self):
+    async def relogin_and_restart(self, async_bot= None):
         self.stop_bot()
         self.index = 0
         self.is_char_load_complete = False
@@ -142,9 +160,12 @@ class Bot:
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
         try:
-            print("Restarting bot in 10 secs...")
-            await asyncio.sleep(10)
-            await self.start_bot()
+            print("Restarting bot in 35 secs...")
+            await asyncio.sleep(35)
+            if self.isScriptable and async_bot and self.auto_relogin:
+                await self.start_bot(async_bot)
+            else:
+                await self.start_bot()
         except Exception as e:
             print(f"Error during restarting bot: {e}")
         
@@ -228,6 +249,7 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
+        self.notify_subscribers(msg)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
 
@@ -316,7 +338,7 @@ class Bot:
                         animsStr = anims[0].get("animStr")
                         if animsStr == self.skillAnim:
                             self.canuseskill = True
-                            self.player.updateTime(self.skillNumber)
+                            # self.player.updateTime(self.skillNumber)
                     msg = anims[0].get("msg")
                     if msg:
                         pass
@@ -451,11 +473,11 @@ class Bot:
                         else:
                             playerTempItem.qty -= iQty
             elif cmd == "event":
-                print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
-                if data["args"]["zoneSet"]  == "A":
-                    if self.strMapName.lower() == "ultraspeaker":
-                        self.walk_to(100, 321)
-                        await asyncio.sleep(0.5)
+                pass
+                # print(Fore.GREEN + data["args"]["zoneSet"] + Fore.WHITE)
+                # if data["args"]["zoneSet"]  == "A":
+                #     if self.strMapName.lower() == "ultraspeaker":
+                #         await self.walk_to(100, 321)
             elif cmd == "ccqr":
                 quest_id = data.get('QuestID', None)
                 s_name = data.get('sName', None)
@@ -549,9 +571,13 @@ class Bot:
                     sender = msg[5]
                     print(Fore.MAGENTA + f"[{datetime.now().strftime('%H:%M:%S')}] {sender} [WHISPER] : {text}" + Fore.WHITE)
             elif f"Your status is now Away From Keyboard" in msg:
-                print("Restart cmds on AFK...")
-                self.index = 0
-                pass
+                if self.isScriptable and self.auto_relogin:
+                    print("Relogin and restart bot on AFK...")
+                    self.stop_bot()
+                elif not self.isScriptable:
+                    print("Restart cmds on AFK...")
+                    self.index = 0
+                    pass
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
         for registered_quest_id in self.registered_auto_quest_ids:
@@ -568,10 +594,10 @@ class Bot:
                         await self.handle_server_response(msg)
                 
         except CustomError as e:
-            self.debug(f"Critical error encountered: {e}")
+            print(f"Critical error encountered: {e}")
             self.run = False  # Stop the bot
         except Exception as e:
-            self.debug(f"Unexpected error in testasync: {e}")
+            print(f"Unexpected error in testasync: {e}")
     
     async def read_batch_async(self, conn):
         """

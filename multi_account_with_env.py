@@ -68,7 +68,8 @@ def create_bot(username, password, server, room_number, class_name):
         showDebug=False,
         showChat=True,
         isScriptable=True,
-        farmClass=class_name
+        farmClass=class_name,
+        autoRelogin=True
     )
     bot.set_login_info(username, password, server)
     return bot
