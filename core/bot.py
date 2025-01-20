@@ -262,9 +262,9 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
-        if self.check_spam_time:
-            if (time.time() - self.check_spam_time) > 300:
-                self.check_spam_time = None
+        if self.auto_adjust_skill_delay and self.check_spam_time:
+            if (time.time() - self.check_spam_time) > 300 and self.skill_delay_ms > 1500:
+                # self.check_spam_time = None
                 self.skill_delay_ms -= self.adjust_skill_delay_by_ms
                 print(f"set skill delay to: {self.skill_delay_ms}")
         self.notify_subscribers(msg)
