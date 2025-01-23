@@ -19,6 +19,7 @@ from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
+import time
 
 class Bot:
 
@@ -35,7 +36,8 @@ class Bot:
             isScriptable: bool = False,
             farmClass: str = None,
             soloClass: str = None,
-            restartOnAFK: bool = False
+            restartOnAFK: bool = False,
+            autoAdjustSkillDelay: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -81,6 +83,13 @@ class Bot:
         self.followed_player_cell = None
         self.subscribers = []
 
+        self.auto_adjust_skill_delay = autoAdjustSkillDelay
+        self.skill_delay_ms = 1500
+        self.adjust_skill_delay_by_ms = 500
+        self.check_spam_time = None
+
+        self.bot_main = None
+
     def subscribe(self, callback):
         """Subscribe to messages."""
         if callable(callback):
@@ -106,6 +115,7 @@ class Bot:
         if self.server_info:
             await self.connect_client()
             if self.isScriptable:
+                self.bot_main = botMain
                 asyncio.create_task(self.read_server_in_background())
 
                 while self.is_client_connected:
@@ -119,7 +129,7 @@ class Bot:
                     await botMain(self)
                     self.stop_bot()
                 if self.auto_relogin:
-                    await self.relogin_and_restart(async_bot=botMain)
+                    await self.relogin_and_restart(async_bot=self.bot_main)
             else:
                 await self.run_commands()
             
@@ -159,6 +169,9 @@ class Bot:
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
+        self.skill_delay_ms = 1500
+        self.adjust_skill_delay_by_ms = 500
+        self.check_spam_time = None
         try:
             print("Restarting bot in 35 secs...")
             await asyncio.sleep(35)
@@ -249,6 +262,11 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
+        if self.auto_adjust_skill_delay and self.check_spam_time:
+            if (time.time() - self.check_spam_time) > 300 and self.skill_delay_ms > 1500:
+                # self.check_spam_time = None
+                self.skill_delay_ms -= self.adjust_skill_delay_by_ms
+                print(f"set skill delay to: {self.skill_delay_ms}")
         self.notify_subscribers(msg)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
@@ -537,6 +555,11 @@ class Bot:
                 msg = msg.split('%')
                 text = msg[4]
                 print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
+                if "spamming the server" in text:
+                    if self.auto_adjust_skill_delay:
+                        self.skill_delay_ms += self.adjust_skill_delay_by_ms
+                        self.check_spam_time = time.time()
+                        print(f"set skill delay to: {self.skill_delay_ms}")
             elif "exitArea" in msg:
                 if msg.split('%')[5].lower() == self.follow_player.lower():
                     self.followed_player_cell = None
@@ -573,11 +596,15 @@ class Bot:
             elif f"Your status is now Away From Keyboard" in msg:
                 if self.isScriptable and self.auto_relogin:
                     print("Relogin and restart bot on AFK...")
-                    self.stop_bot()
+                    await self.relogin_and_restart(async_bot=self.bot_main)
                 elif not self.isScriptable:
                     print("Restart cmds on AFK...")
                     self.index = 0
                     pass
+            elif "invalid session" in msg:
+                if self.isScriptable and self.auto_relogin:
+                    print("Relogin and restart bot on invalid session...")
+                    await self.relogin_and_restart(async_bot=self.bot_main)
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
         for registered_quest_id in self.registered_auto_quest_ids:
@@ -825,6 +852,7 @@ class CustomError(Exception):
 
     def __init__(self, message):
         super().__init__(message)
-
-    def __str__(self):
-        return f"{self.message}"
+        self.message = message
+    
+    def get_message(self):
+        return self.message
