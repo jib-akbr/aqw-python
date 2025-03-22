@@ -5,6 +5,8 @@ async def register_quest_task(bot: 'Bot'):
     print("Running registered quests...")
     while bot.is_client_connected:
         for registered_quest_id in bot.registered_auto_quest_ids:
+            if bot.quest_not_in_progress(registered_quest_id):
+                bot.accept_quest(registered_quest_id)
             if bot.can_turn_in_quest(registered_quest_id):
                 bot.turn_in_quest(registered_quest_id)
                 await asyncio.sleep(1)

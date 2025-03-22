@@ -39,6 +39,7 @@ class Player:
         self.X: int = 0
         self.Y: int= 0
         self.AURAS = []
+        self.skills_ref: dict = {}
 
     def getInfo(self):
         url = "https://game.aq.com/game/api/login/now?"
@@ -103,7 +104,7 @@ class Player:
 
     def updateTime(self, skillNumber: int):
         skill_detail = self.SKILLS[skillNumber]
-        cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION)
+        cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION) + 200
         self._update_skill_time(skillNumber, cooldown)
 
     def delayAllSkills(self, except_skill: int, delay_ms: float = 1500):
@@ -112,13 +113,13 @@ class Player:
             return
         for skill_number in range(len(self.SKILLS)):
             if except_skill != skill_number and skill_number != 0:
-                # print(f"set delay for skill: {skill_number}, except: {except_skill}")
                 self._update_skill_time(skill_number, float(delay_ms))
     
     def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):
         new_cooldown_time = datetime.now() + timedelta(milliseconds=time_offset_ms)
         if not self.SKILLUSED.get(skill_number) or self.SKILLUSED[skill_number] < new_cooldown_time or force_update:
             self.SKILLUSED[skill_number] = new_cooldown_time
+            # print(f"set delay for skill: {skill_number}")
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:
@@ -126,7 +127,7 @@ class Player:
                 return item
         return None
 
-    def get_item_inventory(self, itemName: str):
+    def get_item_inventory(self, itemName: str) -> ItemInventory:
         for item in self.INVENTORY:
             if item.item_name == normalize(itemName):
                 return item
@@ -159,6 +160,12 @@ class Player:
     def get_item_bank(self, itemName: str):
         for item in self.BANK:
             if item.item_name == normalize(itemName):
+                return item
+        return None
+        
+    def get_item_bank_by_id(self, itemId):
+        for item in self.BANK:
+            if item.item_id == str(itemId):
                 return item
         return None
 

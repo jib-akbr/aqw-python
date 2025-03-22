@@ -5,8 +5,9 @@ from functools import wraps
 from inspect import iscoroutinefunction
 from datetime import datetime
 from colorama import Fore
-from model.inventory import ItemType
-from model.inventory import ScrollType
+from model.inventory import ItemType, ItemInventory, ScrollType
+from model.shop import Shop
+import json
 
 def check_alive(func):
     @wraps(func)
@@ -50,9 +51,16 @@ def check_alive(func):
     return async_wrapper if iscoroutinefunction(func) else sync_wrapper
 
 class Command:
-    def __init__(self, bot):
+    def __init__(self, bot, init_handler = False):
         from core.bot import Bot
         self.bot: Bot = bot
+
+        self.quest_to_check: int = None
+        self.is_green_quest_var: bool = None
+        
+        self.skills: list = []
+        if init_handler:
+            self.bot.subscribe(self.message_handler)
 
     def isPlayerAlive(self) -> bool:
         return not self.bot.player.ISDEAD
@@ -96,13 +104,13 @@ class Command:
         print("quest accepted:", quest_id)
     
     @check_alive
-    async def ensure_turn_in_quest(self, quest_id: int) -> None:
+    async def ensure_turn_in_quest(self, quest_id: int, item_id = -1) -> None:
         while self.quest_in_progress(quest_id) and self.isStillConnected():
-            await self.turn_in_quest(quest_id)
+            await self.turn_in_quest(quest_id, item_id)
             await self.sleep(1000)
             if quest_id in self.bot.failed_get_quest_datas:
                 return
-        print("quest turned in:", quest_id)
+        print("quest turned in:", quest_id, item_id)
         
     @check_alive
     async def join_house(self, houseName: str, safeLeave: bool = True):
@@ -144,8 +152,8 @@ class Command:
     async def jump_cell(self, cell: str, pad: str) -> None:
         if self.bot.player.CELL.lower() != cell.lower() or self.bot.player.PAD.lower() != pad.lower():
             self.bot.jump_cell(cell, pad)
-            # print(f"jump cell: {cell} {pad}")
-        await asyncio.sleep(1)
+            #print(f"jump cell: {cell} {pad}")
+            await asyncio.sleep(1)
     
     def is_not_in_cell(self, cell: str) -> bool:
         return self.bot.player.CELL.lower() != cell.lower()
@@ -179,7 +187,6 @@ class Command:
     @check_alive
     async def use_skill(self,  index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0) -> None:
         if not self.bot.player.canUseSkill(int(index)):
-            self.bot.debug(f"Skill {index} not ready yet")
             return
 
         skill = self.bot.player.SKILLS[int(index)]
@@ -238,9 +245,8 @@ class Command:
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
         self.bot.canuseskill = False
-        # await asyncio.sleep(1)
-        self.bot.player.delayAllSkills(except_skill=index, delay_ms=self.bot.skill_delay_ms)
-        self.bot.player.updateTime(index)
+        self.bot.player.delayAllSkills(except_skill=index, delay_ms=1000)
+
 
     @check_alive
     async def sleep(self,  milliseconds: int) -> None:
@@ -264,6 +270,7 @@ class Command:
     
     @check_alive
     async def turn_in_quest(self, quest_id: int, item_id: int = -1) -> None:
+        self.quest_to_check = quest_id
         await self.bot.ensure_leave_from_combat()
         self.bot.turn_in_quest(quest_id, item_id)
         await asyncio.sleep(1)
@@ -303,6 +310,16 @@ class Command:
     def is_in_inventory(self, itemName: str, itemQty: int = 1, operator: str = ">=", isTemp: bool = False) -> bool:
         inInv = self.bot.player.isInInventory(itemName, itemQty, operator, isTemp)
         return inInv[0]
+    
+    def is_in_inventory_or_bank(self, itemName: str, itemQty: int = 1, operator: str = ">=", isTemp: bool = False) -> bool:
+        return self.is_in_bank(itemName, itemQty, operator) or self.is_in_inventory(itemName, itemQty, operator, isTemp)
+    
+    def get_quant_item(self, itemName: str) -> int:
+        # get item quant from inventory
+        item_inventory: ItemInventory = self.bot.player.get_item_inventory(itemName)
+        if item_inventory:
+            return item_inventory.qty
+        return 0
     
     def farming_logger(self, item_name: str, item_qty: int = 1, is_temp: bool = False) -> None:
         # Determine inventory type and fetch the item
@@ -353,6 +370,7 @@ class Command:
     
     @check_alive
     async def inv_to_bank(self, itemNames: Union[str, List[str]]) -> None:
+        await self.leave_combat()
         itemNames = itemNames if isinstance(itemNames, list) else [itemNames]
         for item in itemNames:
             if not self.isStillConnected():
@@ -444,6 +462,17 @@ class Command:
         # this mean not get the desired monster
         return -1
 
+    def get_monster_hp_percentage(self, monster: str) -> int:
+        if monster.startswith('id.'):
+            monster = monster.split('.')[1]
+        for mon in self.bot.monsters:
+            if mon.mon_name.lower() == monster.lower() or mon.mon_map_id == monster:
+                return round(((mon.current_hp/mon.max_hp)*100), 2)
+            elif monster == "*":
+                return round(((mon.current_hp/mon.max_hp)*100), 2)
+        # this mean not get the desired monster
+        return -1
+
     @check_alive
     async def get_map_item(self, map_item_id: int, qty: int = 1):
         for _ in range(qty):
@@ -451,9 +480,13 @@ class Command:
             await asyncio.sleep(1)
 
     @check_alive
-    async def accept_quest_bulk(self, quest_id: int, increament: int):
+    async def accept_quest_bulk(self, quest_id: int, increament: int, ensure:bool = False):
         for i in range(increament):
-            await self.ensure_accept_quest(quest_id + i)
+            if ensure:
+                await self.ensure_accept_quest(quest_id + i)
+            elif not ensure:
+                await self.accept_quest(quest_id + i)
+
 
     @check_alive
     async def register_quest(self, questId: int):
@@ -515,3 +548,101 @@ class Command:
     def get_equipped_class(self):
         equipped_class = self.bot.player.get_equipped_item(ItemType.CLASS)
         return equipped_class if equipped_class else None
+    
+    @check_alive
+    async def sell_item(self, item_name: str):
+        # %xt%zm%sellItem%374121%87406%1%950679343%
+        item: ItemInventory = self.bot.player.get_item_inventory(item_name)
+        if item:
+            self.bot.write_message(f"%xt%zm%sellItem%{self.bot.areaId}%{item.item_id}%1%{item.char_item_id}%")
+            await self.sleep(1000)
+
+    @check_alive
+    async def buy_item(self, shop_id: int, item_name: str, qty: int = 1):
+        print(f"buying {qty} {item_name}")
+        shop: Shop = None
+        for loaded_shop in self.bot.loaded_shop_datas:
+            if str(loaded_shop.shop_id) == str(shop_id):
+                shop = loaded_shop
+                break
+        if shop:
+            for shop_item in shop.items:
+                if shop_item.item_name.lower() == item_name.lower():
+                    packet = f"%xt%zm%buyItem%{self.bot.areaId}%{shop_item.item_id}%{shop.shop_id}%{shop_item.shop_item_id}%{qty}%"
+                    self.bot.write_message(packet)
+                    await asyncio.sleep(1)
+                    break
+        else:
+            packet = f"%xt%zm%loadShop%{self.bot.areaId}%{shop_id}%"
+            self.bot.write_message(packet)
+            await asyncio.sleep(1)
+            await self.buy_item(shop_id, item_name, qty)
+        
+    @check_alive
+    async def ensure_load_shop(self, shop_id: int):
+        await self.leave_combat()
+        while True:
+            for loaded_shop in self.bot.loaded_shop_datas:
+                if str(loaded_shop.shop_id) == str(shop_id): 
+                    print("loaded_Shop", loaded_shop.shop_id)
+                    return
+            packet = f"%xt%zm%loadShop%{self.bot.areaId}%{shop_id}%"
+            self.bot.write_message(packet)
+            await asyncio.sleep(1)
+    
+    @check_alive
+    def get_loaded_shop(self, shop_id: int) -> Shop:
+        for loaded_shop in self.bot.loaded_shop_datas:
+            if str(loaded_shop.shop_id) == str(shop_id): 
+                return loaded_shop
+        return None
+    
+    @check_alive
+    async def is_green_quest(self, quest_id: int) -> bool:
+        await self.turn_in_quest(quest_id)
+        while(self.isStillConnected()):
+            if self.is_green_quest_var is not None:
+                output = self.is_green_quest_var
+                # print(f"{quest_id} is {self.is_green_quest_var}")
+                self.is_green_quest_var = None
+                return output
+            else:
+                await self.sleep(100)
+        return False
+
+    def message_handler(self, message):
+        if message:
+            if self.is_valid_json(message):
+                data = json.loads(message)
+            try:
+                data = data["b"]["o"]
+            except:
+                return
+            cmd = data["cmd"]
+            # print("XX", data)
+            # print("userid", self.bot.user_id)
+            # print()
+            if cmd == "ccqr":
+                quest_id = data.get('QuestID', None)
+                s_name = data.get('sName', None)
+                faction_id = data.get('rewardObj', {}).get('FactionID', None)
+                i_rep = data.get('rewardObj', {}).get('iRep', 0)
+                is_success = data.get('bSuccess', 0)
+                ccqr_msg = data.get('msg', '')
+                if is_success == 1:
+                    pass
+                else:
+                    if int(quest_id) == self.quest_to_check:
+                        if "Missing Turn In Item" in ccqr_msg:
+                            self.is_green_quest_var = True
+                        if "Missing Quest Progress" in ccqr_msg:
+                            self.is_green_quest_var = False
+                        if "One Time Quest Only" in ccqr_msg:
+                            self.is_green_quest_var = False
+
+    def is_valid_json(self, s):
+        try:
+            json.loads(s)
+            return True
+        except json.JSONDecodeError:
+            return False

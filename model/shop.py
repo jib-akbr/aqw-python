@@ -7,7 +7,7 @@ class Shop:
             items.append(ItemInventory(shop_item))
         self.shop_id: str = str(json_data['ShopID'])
         self.shop_name: str = json_data['sName']
-        self.items = items
+        self.items: list[ItemInventory] = items
         self.is_member: bool = json_data['bUpgrd'] == "1"
         
     def get_item(self, item_name: str):

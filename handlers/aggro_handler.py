@@ -8,7 +8,7 @@ async def aggro_handler_task(bot: 'Bot'):
         if not bot.is_aggro_handler_task_running:
             break
         if len(bot.aggro_mons_id) > 0:
-            aggroMon = f"%xt%zm%aggroMon%{bot.areaId}%{'%'.join(str(bot.aggro_mons_id))}%"
+            aggroMon = f"%xt%zm%aggroMon%{bot.areaId}%{'%'.join(map(str, bot.aggro_mons_id))}%"
             bot.write_message(aggroMon)
         await asyncio.sleep(bot.aggro_delay_ms/1000)
     print("Stopping aggro handler...")

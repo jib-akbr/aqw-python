@@ -14,7 +14,8 @@ async def hunt_item(
         most_monster: bool = False,
         farming_logger: bool = False,
         hunt: bool = False,
-        skill_list: list[int] = [0,1,2,0,3,4]
+        skill_list: list[int] = [0,1,2,0,3,4],
+        is_temp: bool = False,
     ):
     if cmd.is_in_bank(item_name):
         await cmd.bank_to_inv(item_name)
@@ -34,12 +35,10 @@ async def hunt_item(
             await cmd.jump_cell(cell, pad)
             await cmd.sleep(1000)
     else:
-        while cmd.is_not_in_cell(cell):
-            await cmd.jump_to_monster(monster_name, most_monster)
-            await cmd.sleep(1000)
+        await cmd.jump_to_monster(monster_name, most_monster)
 
     if farming_logger:
-        cmd.farming_logger(item_name, item_qty)
+        cmd.farming_logger(item_name, item_qty, is_temp)
 
     skill_list = skill_list
     skill_index = 0
