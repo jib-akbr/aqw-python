@@ -39,4 +39,6 @@ class ItemInventory:
         self.qty_now: int = int(json_data.get('iQtyNow', 0))
 
         self.enh_pattern_id: int = int(json_data.get('EnhPatternID', 0))
+
+        self.turn_in: list[ItemInventory] = ItemInventory
         

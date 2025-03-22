@@ -2,8 +2,7 @@ from core.bot import Bot
 from core.commands import Command
 from templates.hunt import hunt_item
 
-async def main(bot: Bot):
-    cmd = Command(bot)
+async def main(cmd: Command):
     private_room_number = 9999999999
     item_qty = 20
 

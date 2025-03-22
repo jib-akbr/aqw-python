@@ -33,7 +33,7 @@ async def a_melody(cmd: Command, qty: int = 300):
         
         await cmd.ensure_accept_quest(8396)
 
-        await farm_mats(item_to_farm)
+        await farm_mats(cmd, item_to_farm)
 
         await cmd.ensure_turn_in_quest(8396)
     
@@ -418,5 +418,6 @@ async def farm_mats(cmd: Command, item_to_farm: list[dict]):
             cell = item["cell"],
             pad = item["pad"],
             map_name = item["map_name"],
-            farming_logger=True
+            farming_logger=True,
+            is_temp=True
         )
