@@ -1,3 +1,4 @@
+from typing import List, Union
 from core.bot import Bot
 from core.commands import Command
 from abstracts.base_command import BaseCommand
@@ -5,27 +6,14 @@ from abstracts.base_command import BaseCommand
 class InvToBankCmd(BaseCommand):
     skip_delay = True
     
-    def __init__(self, itemName: str):
-        self.itemName = itemName
+    def __init__(self, itemNames: Union[str, List[str]]):
+        self.itemNames = itemNames
     
     async def execute(self, bot: Bot, cmd: Command):
-        item = bot.player.get_item_inventory(itemName=self.itemName)        
-        if item:
-            packet = f"%xt%zm%bankFromInv%{bot.areaId}%{item.item_id}%{item.char_item_id}%"
-            bot.write_message(packet)
-            is_exist = False
-            for itemBank in bot.player.BANK:
-                if itemBank.item_name == item.item_name:
-                    bot.player.BANK.remove(itemBank)
-                    bot.player.BANK.append(item)
-                    is_exist = True
-                    break
-            if not is_exist:
-                bot.player.BANK.append(item)
-            for itemInv in bot.player.INVENTORY:
-                if itemInv.item_name == item.item_name:
-                    bot.player.INVENTORY.remove(itemInv)
-                    break
+        cmd.inv_to_bank(self.itemNames)
         
     def to_string(self):
-        return f"Inv to bank : {self.itemName}"
+        if len(self.itemNames) == 1:
+            return f"Inv to bank: {self.itemNames[0]}"
+        else:
+            return f"Inv to bank: {', '.join(self.itemNames)}"

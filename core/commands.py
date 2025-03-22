@@ -5,7 +5,7 @@ from functools import wraps
 from inspect import iscoroutinefunction
 from datetime import datetime
 from colorama import Fore
-from model.inventory import ItemType, ItemInventory
+from model.inventory import ItemType, ItemInventory, ScrollType
 from model.shop import Shop
 import json
 
@@ -111,6 +111,16 @@ class Command:
             if quest_id in self.bot.failed_get_quest_datas:
                 return
         print("quest turned in:", quest_id, item_id)
+        
+    @check_alive
+    async def join_house(self, houseName: str, safeLeave: bool = True):
+        self.stop_aggro()
+        if self.bot.strMapName.lower() == mapName.lower():
+            return
+        self.bot.is_joining_map = True
+        await self.leave_combat(safeLeave)
+        msg = f"%xt%zm%house%1%{self.houseName}%"
+        bot.write_message(msg)
 
     @check_alive
     async def join_map(self, mapName: str, roomNumber: int = None, safeLeave: bool = True) -> None:
@@ -142,7 +152,7 @@ class Command:
     async def jump_cell(self, cell: str, pad: str) -> None:
         if self.bot.player.CELL.lower() != cell.lower() or self.bot.player.PAD.lower() != pad.lower():
             self.bot.jump_cell(cell, pad)
-            print(f"jump cell: {cell} {pad}")
+            #print(f"jump cell: {cell} {pad}")
             await asyncio.sleep(1)
     
     def is_not_in_cell(self, cell: str) -> bool:
@@ -264,6 +274,34 @@ class Command:
         await self.bot.ensure_leave_from_combat()
         self.bot.turn_in_quest(quest_id, item_id)
         await asyncio.sleep(1)
+        
+    async def buy_item_cmd(self, item_name: str, shop_id: int, qty: int = 1):
+        await bot.ensure_leave_from_combat()
+        shop = None
+        for loaded_shop in bot.loaded_shop_datas:
+            if str(loaded_shop.shop_id) == str(self.shop_id):
+                shop = loaded_shop
+                break
+        if shop:
+            for shop_item in shop.items:
+                if shop_item.item_name == self.item_name.lower():
+                    packet = f"%xt%zm%buyItem%{bot.areaId}%{shop_item.item_id}%{shop.shop_id}%{shop_item.shop_item_id}%{self.qty}%"
+                    bot.write_message(packet)
+                    await asyncio.sleep(0.5)
+                    break
+        else:
+            packet = f"%xt%zm%loadShop%{bot.areaId}%{self.shop_id}%"
+            bot.write_message(packet)
+            await asyncio.sleep(1)
+            bot.index -= 1
+            
+    async def sell_item(self, item_name: str, qty: int = 1):
+        for item in bot.player.INVENTORY:
+            if item.item_name.lower() == self.item_name.lower():
+                packet = f"%xt%zm%sellItem%{bot.areaId}%{item.item_id}%{self.qty}%{item.char_item_id}%"
+                bot.write_message(packet)
+                asyncio.sleep(0.5)
+                break
 
     def is_in_bank(self, itemName: str, itemQty: int = 1, operator: str = ">=") -> bool:
         inBank = self.bot.player.isInBank(itemName, itemQty, operator)
@@ -379,10 +417,10 @@ class Command:
                     break
     
     @check_alive
-    async def equip_scroll(self, item_name: str, item_type: str = "scroll"):
+    async def equip_scroll(self, item_name: str, item_type: ScrollType = ScrollType.SCROLL):
         for item in self.bot.player.INVENTORY:
             if item.item_name.lower() == item_name.lower():
-                packet = f"%xt%zm%geia%{self.bot.areaId}%{item_type}%{item.s_meta}%{item.item_id}%"
+                packet = f"%xt%zm%geia%{self.bot.areaId}%{item_type.value}%{item.s_meta}%{item.item_id}%"
                 self.bot.write_message(packet)
                 await asyncio.sleep(1)
                 break
