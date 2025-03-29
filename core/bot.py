@@ -19,6 +19,7 @@ from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
+import time
 
 class Bot:
 
@@ -35,14 +36,15 @@ class Bot:
             isScriptable: bool = False,
             farmClass: str = None,
             soloClass: str = None,
-            restartOnAFK: bool = False
+            restartOnAFK: bool = False,
+            autoAdjustSkillDelay: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
         self.cmdDelay = cmdDelay
         self.showDebug = showDebug
         self.showChat = showChat
-        self.items_drop_whitelist = itemsDropWhiteList
+        self.items_drop_whitelist: list[str] = itemsDropWhiteList
         self.auto_relogin = autoRelogin
         self.follow_player = followPlayer
         self.isScriptable = isScriptable
@@ -54,7 +56,6 @@ class Bot:
         self.is_joining_map = False
         self.is_client_connected = False
         
-        self.command = Command(self)
         self.wait_ms = 0
         self.player = None
         self.cmds = []
@@ -81,10 +82,22 @@ class Bot:
         self.followed_player_cell = None
         self.subscribers = []
 
+        self.auto_adjust_skill_delay = autoAdjustSkillDelay
+        self.skill_delay_ms = 1300
+        self.adjust_skill_delay_by_ms = 500
+        self.check_spam_time = None
+
+        self.missing_turn_in_item_questid: list[int] = [] # this mean quest is unlocked (green quest)
+        self.missing_quest_progress_questid: list[int] = [] # this mean quest is locked (red quest)
+
+        self.bot_main = None
+        self.command = Command(self, init_handler=True)
+
     def subscribe(self, callback):
         """Subscribe to messages."""
         if callable(callback):
-            self.subscribers.append(callback)
+            if callback not in self.subscribers:
+                self.subscribers.append(callback)
 
     def unsubscribe(self, callback):
         """Unsubscribe from messages."""
@@ -106,6 +119,7 @@ class Bot:
         if self.server_info:
             await self.connect_client()
             if self.isScriptable:
+                self.bot_main = botMain
                 asyncio.create_task(self.read_server_in_background())
 
                 while self.is_client_connected:
@@ -116,12 +130,14 @@ class Bot:
                         self.run_register_quest_task()
                         self.is_register_quest_task_running = True
                     
-                    await botMain(self)
+                    await botMain(self.command)
                     self.stop_bot()
                 if self.auto_relogin:
-                    await self.relogin_and_restart(async_bot=botMain)
+                    print("Relogin from start bot")
+                    await self.relogin_and_restart(async_bot=self.bot_main)
             else:
                 await self.run_commands()
+        return
             
     def run_register_quest_task(self):
         asyncio.create_task(register_quest_task(self))  
@@ -159,6 +175,9 @@ class Bot:
         self.loaded_quest_datas = []
         self.loaded_shop_datas: List[Shop] = []
         self.registered_auto_quest_ids = []
+        self.skill_delay_ms = 1500
+        self.adjust_skill_delay_by_ms = 500
+        self.check_spam_time = None
         try:
             print("Restarting bot in 35 secs...")
             await asyncio.sleep(35)
@@ -217,6 +236,7 @@ class Bot:
                 self.index += 1
         print('BOT STOPPED\n')
         if self.auto_relogin:
+            print("relogin from run commands")
             await self.relogin_and_restart()
         
     def print_commands(self):
@@ -249,6 +269,11 @@ class Bot:
             self.stop_bot()
 
     async def handle_server_response(self, msg):
+        if self.auto_adjust_skill_delay and self.check_spam_time:
+            if (time.time() - self.check_spam_time) > 300 and self.skill_delay_ms > 1500:
+                # self.check_spam_time = None
+                self.skill_delay_ms -= self.adjust_skill_delay_by_ms
+                print(f"set skill delay to: {self.skill_delay_ms}")
         self.notify_subscribers(msg)
         if "counter" in msg.lower():
             self.debug(Fore.RED + msg + Fore.WHITE)
@@ -325,6 +350,14 @@ class Bot:
                     self.player.MAX_HP = int(data['o'].get('intHPMax', self.player.MAX_HP))
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
+                # print(self.player.SKILLS)
+                for skill in self.player.SKILLS:
+                    anim_strl = {
+                        "anim" : skill["anim"],
+                        "strl" : skill.get("strl", "")
+                    }
+                    self.player.skills_ref[skill["ref"]] = anim_strl
+                # print(self.player.skills_ref)
             elif cmd == "stu":
                 if data["sta"].get("$tha"):
                     self.player.CDREDUCTION = data["sta"].get("$tha")
@@ -334,14 +367,16 @@ class Bot:
                 m = data.get("m")
                 p = data.get("p")
                 if anims:
-                    if self.username_id in anims[0]["cInf"]:
-                        animsStr = anims[0].get("animStr")
-                        if animsStr == self.skillAnim:
-                            self.canuseskill = True
-                            # self.player.updateTime(self.skillNumber)
-                    msg = anims[0].get("msg")
-                    if msg:
-                        pass
+                    for anim in anims:
+                        if anim["cInf"] == f"p:{self.user_id}":
+                            animStr: str = anim.get("animStr")
+                            strl: str = anim.get("strl", "")
+                            # print(self.player.skills_ref)
+                            for key in self.player.skills_ref.keys():
+                                if animStr == self.player.skills_ref[key]["anim"] and strl == self.player.skills_ref[key]["strl"] :
+                                    # print(f"skill cast: {list(self.player.skills_ref.keys()).index(key)}")
+                                    self.player.updateTime(list(self.player.skills_ref.keys()).index(key))
+                                    break
                 if p:
                     player = p.get(self.username)
                     if player:
@@ -369,8 +404,15 @@ class Bot:
                             self.player.removeAura(removed_aura)
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
+                self.player.SKILLS[5]["strl"] = data["o"]["strl"]
                 self.player.SKILLS[5]["cd"] = data["o"]["cd"]
                 self.player.SKILLS[5]["tgt"] = data["o"]["tgt"]
+                anim_strl = {
+                        "anim" : self.player.SKILLS[5]["anim"],
+                        "strl" : self.player.SKILLS[5]["strl"]
+                    }
+                self.player.skills_ref["i1"] = anim_strl
+                # print(self.player.skills_ref)
                 # print(f"Skills: {self.player.SKILLS}")
             elif cmd == "playerDeath":
                 if int(data["userID"]) == self.player.LOGINUSERID:
@@ -383,7 +425,14 @@ class Bot:
                 for quest_id, quest_data in data.get("quests").items():
                     self.loaded_quest_datas.append(quest_data)
             elif cmd == "loadShop":
-                self.loaded_shop_datas.append(Shop(data["shopinfo"]))
+                shop = Shop(data["shopinfo"])
+                found = False
+                for loaded_shop in self.loaded_shop_datas:
+                    if str(loaded_shop.shop_id) == str(shop.shop_id):
+                        found = True
+                        break
+                if found == False:
+                    self.loaded_shop_datas.append(Shop(data["shopinfo"]))
             elif cmd == "buyItem":
                 if data["bitSuccess"] == 1:
                     for loaded_shop in self.loaded_shop_datas:
@@ -395,19 +444,22 @@ class Bot:
                                     "CharItemID": data["CharItemID"],
                                     "iQty": data["iQty"]
                                 })
+                                print(f"bought {bought.item_name} {bought.qty}")
                                 player_item = self.player.get_item_inventory_by_id(bought.item_id)
                                 if player_item:
                                     player_item.qty += bought.qty
                                 else:
                                     self.player.INVENTORY.append(bought)
-                                break
+                                return
             elif cmd == "sellItem":
                 for item in self.player.INVENTORY:
                     if int(item.char_item_id) == int(data["CharItemID"]):
                         if data["iQtyNow"] == 0:
                             self.player.INVENTORY.remove(item)
+                            print(f"sold {item.item_name}. qty now: 0")
                         else:
                             item.qty = data["iQtyNow"]
+                            print(f"sold {item.item_name}. qty now: {item.qty}")
                         break
             elif cmd == "addGoldExp":
                 self.player.GOLD += data["intGold"]
@@ -432,6 +484,7 @@ class Bot:
                 for itemDrop in dropItems.values():
                     itemDrop = ItemInventory(itemDrop)
                     if itemDrop.item_name in [item.lower() for item in self.items_drop_whitelist]:
+                        print(f"get drop {itemDrop.item_name}")
                         self.get_drop(self.username_id, itemDrop.item_id)
                         self.player.INVENTORY.append(itemDrop)
                         break
@@ -442,12 +495,20 @@ class Bot:
                     # Item inventory
                     if dropItem.char_item_id:
                         playerItem = self.player.get_item_inventory_by_id(itemId)
+                        playerBankItem = self.player.get_item_bank_by_id(itemId)
+                        item_name = ""
                         if playerItem:
                             playerItem.qty = dropItem.qty_now
                             playerItem.char_item_id = dropItem.char_item_id
                             # await self.check_registered_quest_completion(itemId)
+                            item_name = playerItem.item_name
                         else:
                             self.player.INVENTORY.append(dropItem)
+                        if playerBankItem:
+                            playerBankItem.qty = dropItem.qty_now
+                            playerBankItem.char_item_id = dropItem.char_item_id
+                            item_name = playerBankItem.item_name
+                        print(f"add items {item_name}. qty now {dropItem.qty_now}")
                     # Item temp inventory
                     else:
                         playerItem = self.player.get_item_temp_inventory_by_id(itemId)
@@ -493,6 +554,12 @@ class Bot:
                     print(Fore.YELLOW + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} - {i_rep} rep" + Fore.WHITE)
                 else:
                     print(Fore.RED + f"ccqr: [{datetime.now().strftime('%H:%M:%S')}] {quest_id} - {s_name} | {ccqr_msg}" + Fore.WHITE)
+                    if "Missing Turn In Item" in ccqr_msg:
+                        self.missing_turn_in_item_questid.append(int(quest_id))
+                    if "Missing Quest Progress" in ccqr_msg:
+                        self.missing_quest_progress_questid.append(int(quest_id))
+                    if "One Time Quest Only" in ccqr_msg:
+                        pass
             elif cmd == "Wheel":
                 dropItems = data.get('dropItems')
                 dropItemsName = [item["sName"] for item in dropItems.values() if "sName" in item]
@@ -537,6 +604,11 @@ class Bot:
                 msg = msg.split('%')
                 text = msg[4]
                 print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
+                if "spamming the server" in text:
+                    if self.auto_adjust_skill_delay:
+                        self.skill_delay_ms += self.adjust_skill_delay_by_ms
+                        self.check_spam_time = time.time()
+                        print(f"set skill delay to: {self.skill_delay_ms}")
             elif "exitArea" in msg:
                 if msg.split('%')[5].lower() == self.follow_player.lower():
                     self.followed_player_cell = None
@@ -573,11 +645,15 @@ class Bot:
             elif f"Your status is now Away From Keyboard" in msg:
                 if self.isScriptable and self.auto_relogin:
                     print("Relogin and restart bot on AFK...")
-                    self.stop_bot()
+                    await self.relogin_and_restart(async_bot=self.bot_main)
                 elif not self.isScriptable:
                     print("Restart cmds on AFK...")
                     self.index = 0
                     pass
+            elif "invalid session" in msg:
+                if self.isScriptable and self.auto_relogin:
+                    print("Relogin and restart bot on invalid session...")
+                    await self.relogin_and_restart(async_bot=self.bot_main)
 
     async def check_registered_quest_completion(self, item_id, is_temp: bool = False):
         for registered_quest_id in self.registered_auto_quest_ids:
@@ -586,18 +662,23 @@ class Bot:
 
     async def read_server_in_background(self):
         """Background task to read and handle messages."""
-        try:
-            while self.is_client_connected:
+        while self.is_client_connected:
+            try:
                 messages = await self.read_batch_async(self.client_socket)
                 if messages:
                     for msg in messages:
                         await self.handle_server_response(msg)
-                
-        except CustomError as e:
-            print(f"Critical error encountered: {e}")
-            self.run = False  # Stop the bot
-        except Exception as e:
-            print(f"Unexpected error in testasync: {e}")
+                if messages is None:
+                    if self.isScriptable and self.auto_relogin:
+                        self.stop_bot()
+                        # print("Relogin and restart bot on timeout...")
+                        # await self.relogin_and_restart(async_bot=self.bot_main)
+                    
+            except CustomError as e:
+                print(f"Critical error encountered: {e}")
+                self.run = False  # Stop the bot
+            except Exception as e:
+                print(f"Unexpected error in testasync: {e}")
     
     async def read_batch_async(self, conn):
         """
@@ -609,6 +690,7 @@ class Bot:
     def read_batch(self, conn):
         message_builder = ""
         complete_messages = []
+        last_received_time = time.time()
         while True:
             try:
                 conn.settimeout(0.5)
@@ -618,6 +700,7 @@ class Bot:
                     self.is_client_connected = False
                     break
                 message_builder += buf.decode('utf-8')
+                last_received_time = time.time()  # Update last activity
                 if not message_builder.endswith("\x00"):
                     continue
                 messages = message_builder.split("\x00")
@@ -632,9 +715,20 @@ class Bot:
                 if complete_messages:
                     return complete_messages
             except socket.timeout:
-                return
+                # if (time.time() - last_received_time) > 15 and self.auto_relogin:  # 15 seconds of inactivity
+                #     print("Connection lost ? : No data received for 15 seconds.")
+                #     return None
+                pass
             except Exception as e:
-                return f"Error reading data: {e}"
+                # if (time.time() - last_received_time) > 15 and self.auto_relogin:
+                #     print("Connection lost ? : No data received for 15 seconds.")
+                #     return None
+                # return f"Error reading data: {e}"
+                pass
+            # finally:
+            #     if (time.time() - last_received_time) > 15 and self.auto_relogin:
+            #         print("Connection lost ? : No data received for 15 seconds.")
+            #         return None
         return complete_messages
     
     def write_message(self, message):
@@ -680,15 +774,20 @@ class Bot:
     def use_scroll(self, monsterid, max_target, scroll_id):
         self.target = [f"i1>m:{i}" for i in monsterid][:max_target]
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%{scroll_id}%wvz%")
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%{scroll_id}%wvz%")
         
     def use_potion(self, potion_id):
         self.target = [f"i1>p:{i}" for i in monsterid][:targetMax]
         self.write_message(f"%xt%zm%gar%1%0%i1>p:{self.user_id}%{potion_id}%wvz%")
 
     def use_skill_to_monster(self, skill, monsters_id, max_target):
-        if not self.check_is_skill_safe(skill) or not monsters_id:
+        # if not self.check_is_skill_safe(skill) or not monsters_id:
+        #     return
+        if not monsters_id:
             return
+        # print("SSS", skill, monsters_id, max_target)
         self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
@@ -696,6 +795,7 @@ class Bot:
         if not self.check_is_skill_safe(skill):
             return
         self.target = [f"a{skill}>p:{i}" for i in self.user_ids][:max_target]
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         
@@ -797,8 +897,10 @@ class Bot:
         for loaded_quest in self.loaded_quest_datas:
             if str(loaded_quest.get("QuestID", 0))  == str(questId):
                 return self._check_req_inventory(loaded_quest["turnin"])
+        return False
 
     def _check_req_inventory(self, quest_data) -> bool:
+        all_items_met = True
         for req_item in quest_data:
             required_item_id = req_item["ItemID"]
             required_qty = req_item["iQty"]
@@ -806,9 +908,12 @@ class Bot:
             item = self.player.get_item_inventory_by_id(required_item_id) or \
                 self.player.get_item_temp_inventory_by_id(required_item_id)
             if not item or int(item.qty) < int(required_qty):
-                return False
-
-        return True
+                all_items_met = False
+        return all_items_met
+    
+    def quest_not_in_progress(self, quest_id: int) -> bool:
+        loaded_quest_ids = [loaded_quest["QuestID"] for loaded_quest in self.loaded_quest_datas]
+        return str(quest_id) not in str(loaded_quest_ids)
 
     def reset_cmds(self):
         self.index = 0
@@ -825,6 +930,7 @@ class CustomError(Exception):
 
     def __init__(self, message):
         super().__init__(message)
-
-    def __str__(self):
-        return f"{self.message}"
+        self.message = message
+    
+    def get_message(self):
+        return self.message

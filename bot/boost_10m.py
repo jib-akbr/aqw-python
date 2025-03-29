@@ -2,8 +2,7 @@ from core.bot import Bot
 from core.commands import Command
 from templates.hunt import hunt_item
 
-async def main(bot: Bot):
-    cmd = Command(bot)
+async def main(cmd: Command):
     private_room_number = 999999
 
     item_list = ["GOLD Boost! (10 min)", "CLASS Boost! (10 min)", "REPUTATION Boost! (10 min)"]
@@ -13,7 +12,7 @@ async def main(bot: Bot):
     cmd.add_drop("Trollola Nectar")
     cmd.add_drop("Moglinberries")
     await cmd.bank_to_inv(item_list)
-    await cmd.equip_item("Legion Revenant")
+    await cmd.equip_item("ArchPaladin")
 
     while cmd.isStillConnected():
 
@@ -27,8 +26,7 @@ async def main(bot: Bot):
             monster_name= "Acornent",
             most_monster=True,
             farming_logger=True,
-            room_number=private_room_number,
-            auto_equip_class=True
+            room_number=private_room_number
         )
         await hunt_item(
             cmd,
@@ -39,8 +37,7 @@ async def main(bot: Bot):
             pad="Center",
             monster_name="Trollola Plant",
             farming_logger=True,
-            room_number=private_room_number,
-            auto_equip_class=True
+            room_number=private_room_number
         )
         await hunt_item(
             cmd,
@@ -50,8 +47,7 @@ async def main(bot: Bot):
             monster_name="Dark Makai",
             most_monster=True,
             farming_logger=True,
-            room_number=private_room_number,
-            auto_equip_class=True
+            room_number=private_room_number
         )
         
         await cmd.ensure_turn_in_quest(6208)

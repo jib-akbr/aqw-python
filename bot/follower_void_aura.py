@@ -2,12 +2,11 @@ from core.bot import Bot
 from core.commands import Command
 from templates.hunt import hunt_item
 
-async def main(bot: Bot):
-    cmd = Command(bot)
+async def main(cmd: Command):
 
     await cmd.join_map("whitemap")
 
-    await cmd.bank_to_inv([
+    item_list = [
         "Astral Ephemerite Essence",
         "Belrot the Fiend Essence",
         "Black Knight Essence",
@@ -19,7 +18,11 @@ async def main(bot: Bot):
         "Void Dragon Essence",
         "Creature Creation Essence",
         "Void Aura"
-    ])    
+    ]
+
+    await cmd.bank_to_inv(item_list)   
+
+    cmd.add_drop(item_list) 
 
     await cmd.equip_item("Legion Revenant")
     await cmd.register_quest(4432)
@@ -27,8 +30,8 @@ async def main(bot: Bot):
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
     while cmd.isStillConnected():
-        if bot.follow_player != "" and bot.followed_player_cell != bot.player.CELL:
-            await bot.goto_player(bot.follow_player)
+        if cmd.bot.follow_player != "" and cmd.bot.followed_player_cell != cmd.bot.player.CELL:
+            await cmd.bot.goto_player(cmd.bot.follow_player)
             await cmd.sleep(1000)
             continue 
         await cmd.use_skill(skill_list[skill_index])

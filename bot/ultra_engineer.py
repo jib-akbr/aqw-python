@@ -1,12 +1,11 @@
 from core.bot import Bot
 from core.commands import Command
 
-async def main(bot: Bot):
-    cmd = Command(bot)
+async def main(cmd: Command):
     private_room_number = 1231
 
-    if bot.farmClass:
-        await cmd.equip_item(bot.farmClass)
+    if cmd.bot.soloClass:
+        await cmd.equip_item(cmd.bot.soloClass)
         await cmd.equip_item_by_enhancement(enh_pattern_id=29) # 29 for penitence
         await cmd.equip_item_by_enhancement(enh_pattern_id=10) # 10 for valiance
     
@@ -32,8 +31,10 @@ async def main(bot: Bot):
         skill_index += 1
         if skill_index >= len(skill_list):
             skill_index = 0
+        await cmd.sleep(100)
     
     await cmd.join_map("battleon", private_room_number)
+    await cmd.turn_in_quest(8154)
 
     print("finished ultra engineer")
     await cmd.sleep(100000)
