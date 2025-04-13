@@ -221,6 +221,44 @@ async def darkons_receipts_tower_of_doom(cmd: Command, qty: int = 222):
     
     await cmd.inv_to_bank(item_name)
 
+async def darkons_receipts_arcangrove(cmd: Command, qty: int = 222):
+    item_name = "Darkon's Receipts"
+    map_name = "arcangrove"
+
+    if cmd.is_in_bank(item_name):
+        await cmd.bank_to_inv(item_name)
+    
+    cmd.farming_logger(item_name, qty)
+
+    if cmd.is_in_inventory(item_name, qty, ">="):
+        await cmd.inv_to_bank(item_name)
+        return
+    
+    if cmd.is_not_in_map(map_name):
+        await cmd.join_map(map_name)
+    
+    if cmd.is_in_bank("Banana"):
+        await cmd.bank_to_inv("Banana")
+    
+    cmd.add_drop(item_name)
+    cmd.add_drop("Banana")
+
+    item_to_farm = [
+        {"item_name": "Banana", "qty": 22,"map_name": map_name, "cell": "LeftBack", "pad": "Right", "is_solo": False},
+    ]
+
+    while cmd.isStillConnected():
+        if cmd.is_in_inventory(item_name, qty, ">="):
+            break
+        
+        await cmd.ensure_accept_quest(7324)
+
+        await farm_mats(cmd, item_to_farm)
+
+        await cmd.ensure_turn_in_quest(7324)
+    
+    await cmd.inv_to_bank(item_name)
+
 async def las_gratitude(cmd: Command, qty: int = 300):
     item_name = "La's Gratitude"
     map_name = "astravia"
