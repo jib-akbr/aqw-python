@@ -34,6 +34,7 @@ async def main(cmd: Command):
         await cmd.sleep(100)
     
     await cmd.join_map("battleon", private_room_number)
+    await cmd.turn_in_quest(8154)
 
     print("finished ultra engineer")
     await cmd.sleep(100000)
