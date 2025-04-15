@@ -42,7 +42,7 @@ def message_handler(message):
     global is_locked_zone
     if message:
         if message.startswith("%") and message.endswith("%"):
-            if "warning" in message:
+            if "locked zone" in message.lower():
                 msg = message.split('%')
                 text = msg[4]
                 print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
