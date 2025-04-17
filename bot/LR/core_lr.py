@@ -85,7 +85,7 @@ async def conquest_wreath(cmd: Command, qty: int = 6):
     
     await cmd.inv_to_bank(list_items)
 
-async def conquest_wreath(cmd: Command, qty: int = 10):
+async def exalted_crown(cmd: Command, qty: int = 10):
     # not finished yet
     item_name = "Exalted Crown"
 
@@ -113,7 +113,15 @@ async def conquest_wreath(cmd: Command, qty: int = 10):
 
         await cmd.ensure_accept_quest(6899)
 
+        await get_hooded_legion_cowl(cmd)
+        await get_leto_ssp(cmd)
+        await get_dages_favor(cmd)
+        await get_emblem_of_dage(cmd)
+        await get_diamond_token_of_dage(cmd)
+        await get_dark_token(cmd)
+
         await cmd.ensure_turn_in_quest(6899)
+    await cmd.inv_to_bank(list_items)
 
 async def get_hooded_legion_cowl(cmd: Command):
     item = "Hooded Legion Cowl"
@@ -122,9 +130,10 @@ async def get_hooded_legion_cowl(cmd: Command):
     if cmd.is_in_inventory(item):
         return
     
+    cmd.farming_logger(item)
     await cmd.join_map("underworld")
     await cmd.ensure_load_shop(216)
-    await cmd.buy_item(1951, item, 1)
+    await cmd.buy_item(216, item, 1)
 
 async def get_dages_favor(cmd: Command, qty: int = 300):
     await hunt_item(
@@ -137,6 +146,132 @@ async def get_dages_favor(cmd: Command, qty: int = 300):
             farming_logger=True,
             is_temp=False
         )
+    
+async def get_emblem_of_dage(cmd: Command, qty: int = 1):
+    item = "Emblem of Dage"
+    await cmd.bank_to_inv(item)
+    if cmd.is_in_inventory(item, qty):
+        return
+    await cmd.bank_to_inv("Legion Round 4 Medal")
+    if not cmd.is_in_inventory("Legion Round 4 Medal"):
+        cmd.stopBot("Required : Legion Round 4 Medal in inventory")
+    
+    cmd.add_drop(item)
+    cmd.farming_logger(item, qty)
+    await cmd.ensure_accept_quest(4742)
+    await hunt_item(
+            cmd = cmd,
+            item_name = "Legion Seal",
+            item_qty = 25,
+            cell = "r10",
+            pad = "Left",
+            map_name = "shadowblast",
+            farming_logger=True,
+            is_temp=False
+        )
+    await hunt_item(
+            cmd = cmd,
+            item_name = "Gem of Mastery",
+            item_qty = 1,
+            cell = "r10",
+            pad = "Left",
+            map_name = "shadowblast",
+            farming_logger=True,
+            is_temp=False
+        )
+    await cmd.ensure_turn_in_quest(4742)
+    await cmd.inv_to_bank(["Legion Seal", "Gem of Mastery"])
+    await cmd.sleep(1000)
+
+async def get_diamond_token_of_dage(cmd: Command, qty: int = 30):
+    item = "Diamond Token of Dage"
+    await cmd.bank_to_inv(item)
+    if cmd.is_in_inventory(item, qty):
+        return
+    
+    cmd.add_drop(item)
+    cmd.farming_logger(item, qty)
+
+    item_to_farm = [
+        {"item_name": "Defeated Makai", "qty": 25, "map_name": "tercessuinotlim", "cell": "Enter", "pad": "Spawn", "is_solo": False},
+        {"item_name": "Carnax Eye", "qty": 1, "map_name": "aqlesson","cell": "Frame9", "pad": "Right", "is_solo" : True},
+        {"item_name": "Red Dragon's Fang", "qty": 1,"map_name": "lair", "cell": "End", "pad": "Left", "is_solo": True},
+        {"item_name": "Kathool Tentacle", "qty": 1,"map_name": "deepchaos", "cell": "Frame4", "pad": "Left", "is_solo": True},
+        {"item_name": "Fluffy's Bones", "qty": 1,"map_name": "dflesson", "cell": "r12", "pad": "Right", "is_solo": True},
+        {"item_name": "Blood Titan's Blade", "qty": 1,"map_name": "bloodtitan", "cell": "Enter", "pad": "Spawn", "is_solo": True},
+    ]
+
+    cmd.farming_logger(item, qty)
+
+    while cmd.isStillConnected():
+        if cmd.is_in_inventory(item, qty, ">="):
+            break
+
+        await cmd.ensure_accept_quest(4743)
+
+        await farm_mats(cmd, item_to_farm)
+
+        await cmd.ensure_turn_in_quest(4743)
+
+async def get_dark_token(cmd: Command, qty: int = 100):
+    item = "Dark Token"
+    await cmd.bank_to_inv(item)
+    if cmd.is_in_inventory(item, qty):
+        return
+    
+    cmd.add_drop(item)
+    cmd.farming_logger(item, qty)
+
+    await cmd.join_map("seraphicwardage")
+    await cmd.jump_cell("Enter", "Spawn")
+
+    skill_index = 0
+    skill_list = [0,1,2,0,3,4]
+
+    while cmd.isStillConnected():
+        if cmd.is_in_inventory(item, qty, ">="):
+            break
+
+        for q in [6248, 6249]:
+            if cmd.quest_not_in_progress(q):
+                await cmd.accept_quest(q)
+            if cmd.can_turnin_quest(q):
+                await cmd.turn_in_quest(q)
+        
+        await cmd.use_skill(skill_list[skill_index])
+        skill_index += 1
+        if skill_index >= len(skill_index):
+            skill_index = 0
+        await cmd.sleep(100)
+
+async def get_leto_ssp(cmd: Command, qty: int = 4000):
+    item_name = "Legion Token"
+
+    await cmd.bank_to_inv("Shogun Paragon Pet")
+    await cmd.bank_to_inv(item_name)
+
+    cmd.add_drop(item_name)
+    cmd.farming_logger(item_name, qty)
+
+    await cmd.join_map("fotia")
+
+    skill_index = 0
+    skill_list = [0,1,2,0,3,4]
+
+    while cmd.isStillConnected():
+        if cmd.is_in_inventory(item_name, qty, ">="):
+            break
+
+        if cmd.quest_not_in_progress(5755):
+            await cmd.accept_quest(5755)
+        if cmd.can_turnin_quest(5755):
+            await cmd.turn_in_quest(5755)
+        
+        await cmd.use_skill(skill_list[skill_index])
+        skill_index += 1
+        if skill_index >= len(skill_list):
+            skill_index = 0
+        await cmd.sleep(100)
 
 
 async def farm_mats(cmd: Command, item_to_farm: list[dict]):
