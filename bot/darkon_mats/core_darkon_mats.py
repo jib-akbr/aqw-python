@@ -146,7 +146,7 @@ async def bounty_hunter_dubloon(cmd: Command, qty: int = 300):
     await cmd.inv_to_bank(item_name)
 
 async def darkons_receipts_binky(cmd: Command, qty: int = 222):
-    item_name = "Darkon's Receipts"
+    item_name = "Darkon's Receipt"
     map_name = "doomvault"
 
     if cmd.is_in_bank(item_name):
@@ -184,7 +184,7 @@ async def darkons_receipts_binky(cmd: Command, qty: int = 222):
     await cmd.inv_to_bank(item_name)
 
 async def darkons_receipts_tower_of_doom(cmd: Command, qty: int = 222):
-    item_name = "Darkon's Receipts"
+    item_name = "Darkon's Receipt"
     map_name = "towerofdoom7"
 
     if cmd.is_in_bank(item_name):
@@ -222,7 +222,7 @@ async def darkons_receipts_tower_of_doom(cmd: Command, qty: int = 222):
     await cmd.inv_to_bank(item_name)
 
 async def darkons_receipts_arcangrove(cmd: Command, qty: int = 222):
-    item_name = "Darkon's Receipts"
+    item_name = "Darkon's Receipt"
     map_name = "arcangrove"
 
     if cmd.is_in_bank(item_name):
