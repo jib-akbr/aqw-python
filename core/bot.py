@@ -353,7 +353,7 @@ class Bot:
                 # print(self.player.SKILLS)
                 for skill in self.player.SKILLS:
                     anim_strl = {
-                        "anim" : skill["anim"],
+                        "anim" : skill.get("anim", ""),
                         "strl" : skill.get("strl", "")
                     }
                     self.player.skills_ref[skill["ref"]] = anim_strl
@@ -576,7 +576,7 @@ class Bot:
                         self.failed_get_quest_datas.append(quest_id)
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
-                self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.0098]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
+                self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.01]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
             elif "joinOK" in msg:
                 self.extract_user_ids(msg)
             elif "userGone" in msg:
@@ -736,7 +736,7 @@ class Bot:
         if self.client_socket is None:
             return "Error: Connection is not established"
         try:
-            self.client_socket.sendall((message + "\x00").encode('utf-8'))
+            self.client_socket.sendall((message + "\u0000").encode('utf-8'))
         except socket.error as e:
             return f"Error writing to the connection: {e}"
         return None
