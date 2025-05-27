@@ -9,7 +9,7 @@ class GetMapItemCmd(BaseCommand):
         self.qty = qty
 
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.get_map_item(self.map_item_id, self.qty)
+        await cmd.get_map_item(self.map_item_id, self.qty)
         
     def to_string(self):
         return f"Get map item: {self.map_item_id}"

@@ -24,7 +24,8 @@ class QuestItemReq(QuestReq):
             cmd.HuntMonsterCmd(self.monster),
             *_attack_monster(self.monster),
             cmd.UpIndexCmd(_attack_monster_len() + 3),
-            cmd.SleepCmd(500)
+            cmd.SleepCmd(500),
+            cmd.JumpCmd('Enter', 'Spawn'),
         ]
         
 class QuestMapItemReq(QuestReq):
@@ -32,11 +33,16 @@ class QuestMapItemReq(QuestReq):
         self.map_item_name = map_item_name
         self.map_item_id = map_item_id
         self.qty = qty
+        
+    def get_items(self):
+        return [*get_map_items(self.map_item_id, self.qty)]
     
     def to_cmds(self):
+        map_item_cmds_list = self.get_items()
         return [
-            # cmd.IsInInvCmd(self.map_item_name, self.qty, operator=">=", isTemp=True),
-            *get_map_items(self.map_item_id, self.qty)
+            *map_item_cmds_list,
+            cmd.IsInInvCmd(self.map_item_name, self.qty, operator="<", isTemp=True),
+            cmd.UpIndexCmd(len(map_item_cmds_list) + 1)
         ]
 
 class QuestSingleReq(QuestReq):

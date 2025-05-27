@@ -260,7 +260,6 @@ class Bot:
         if not command.skip_delay:  # when not skip delay, execute cmd after print its text
             await command.execute(self, self.command)
             await asyncio.sleep(self.cmdDelay/1000)
-        return
     
     def check_user_access_level(self, username: str, access_level: int):
         if access_level >= 30:
@@ -714,21 +713,8 @@ class Bot:
                         complete_messages.append(msg)
                 if complete_messages:
                     return complete_messages
-            except socket.timeout:
-                # if (time.time() - last_received_time) > 15 and self.auto_relogin:  # 15 seconds of inactivity
-                #     print("Connection lost ? : No data received for 15 seconds.")
-                #     return None
-                pass
             except Exception as e:
-                # if (time.time() - last_received_time) > 15 and self.auto_relogin:
-                #     print("Connection lost ? : No data received for 15 seconds.")
-                #     return None
-                # return f"Error reading data: {e}"
-                pass
-            # finally:
-            #     if (time.time() - last_received_time) > 15 and self.auto_relogin:
-            #         print("Connection lost ? : No data received for 15 seconds.")
-            #         return None
+                return None
         return complete_messages
     
     def write_message(self, message):

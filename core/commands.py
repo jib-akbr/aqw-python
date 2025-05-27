@@ -115,12 +115,12 @@ class Command:
     @check_alive
     async def join_house(self, houseName: str, safeLeave: bool = True):
         self.stop_aggro()
-        if self.bot.strMapName.lower() == mapName.lower():
+        if self.bot.strMapName.lower() == houseName.lower():
             return
         self.bot.is_joining_map = True
         await self.leave_combat(safeLeave)
-        msg = f"%xt%zm%house%1%{self.houseName}%"
-        bot.write_message(msg)
+        msg = f"%xt%zm%house%1%{houseName}%"
+        self.bot.write_message(msg)
 
     @check_alive
     async def join_map(self, mapName: str, roomNumber: int = None, safeLeave: bool = True) -> None:
@@ -138,12 +138,6 @@ class Command:
         else:
             msg = f"%xt%zm%cmd%1%tfer%{self.bot.player.USER}%{mapName}%"
         self.bot.write_message(msg)
-        count = 0
-        while self.bot.is_joining_map and self.isStillConnected():
-            await asyncio.sleep(0.5)
-            count += 1
-            if count % 5 == 0 and self.is_not_in_map(mapName):
-                self.bot.write_message(msg)
     
     def is_not_in_map(self, mapName: str) -> bool:
         return mapName.lower() != self.bot.strMapName.lower()
@@ -186,7 +180,7 @@ class Command:
         
     @check_alive
     async def use_skill(self,  index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0) -> None:
-        if not self.bot.player.canUseSkill(int(index)):
+        if not self.bot.player.canUseSkill(int(index)) or not self.bot.check_is_skill_safe(int(index)):
             return
 
         skill = self.bot.player.SKILLS[int(index)]
@@ -276,30 +270,30 @@ class Command:
         await asyncio.sleep(1)
         
     async def buy_item_cmd(self, item_name: str, shop_id: int, qty: int = 1):
-        await bot.ensure_leave_from_combat()
+        await self.bot.ensure_leave_from_combat()
         shop = None
-        for loaded_shop in bot.loaded_shop_datas:
+        for loaded_shop in self.bot.loaded_shop_datas:
             if str(loaded_shop.shop_id) == str(self.shop_id):
                 shop = loaded_shop
                 break
         if shop:
             for shop_item in shop.items:
                 if shop_item.item_name == self.item_name.lower():
-                    packet = f"%xt%zm%buyItem%{bot.areaId}%{shop_item.item_id}%{shop.shop_id}%{shop_item.shop_item_id}%{self.qty}%"
-                    bot.write_message(packet)
+                    packet = f"%xt%zm%buyItem%{self.bot.areaId}%{shop_item.item_id}%{shop.shop_id}%{shop_item.shop_item_id}%{self.qty}%"
+                    self.bot.write_message(packet)
                     await asyncio.sleep(0.5)
                     break
         else:
-            packet = f"%xt%zm%loadShop%{bot.areaId}%{self.shop_id}%"
-            bot.write_message(packet)
+            packet = f"%xt%zm%loadShop%{self.bot.areaId}%{self.shop_id}%"
+            self.bot.write_message(packet)
             await asyncio.sleep(1)
-            bot.index -= 1
+            self.bot.index -= 1
             
     async def sell_item(self, item_name: str, qty: int = 1):
-        for item in bot.player.INVENTORY:
+        for item in self.bot.player.INVENTORY:
             if item.item_name.lower() == self.item_name.lower():
-                packet = f"%xt%zm%sellItem%{bot.areaId}%{item.item_id}%{self.qty}%{item.char_item_id}%"
-                bot.write_message(packet)
+                packet = f"%xt%zm%sellItem%{self.bot.areaId}%{item.item_id}%{self.qty}%{item.char_item_id}%"
+                self.bot.write_message(packet)
                 asyncio.sleep(0.5)
                 break
 
