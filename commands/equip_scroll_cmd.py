@@ -12,7 +12,7 @@ class EquipScrollCmd(BaseCommand):
         self.item_type = item_type
     
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.equip_scroll(self.item_name, self.item_type)
+        await cmd.equip_scroll(self.item_name, self.item_type)
         
     def to_string(self):
         return f"Equip scroll : {self.item_name}"

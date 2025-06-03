@@ -13,7 +13,7 @@ class HuntMonsterCmd(BaseCommand):
         self.byAliveMonster = byAliveMonster
     
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.jump_to_monster(self.monsterName, self.byMostMonster, self.byAliveMonster)
+        await cmd.jump_to_monster(self.monsterName, self.byMostMonster, self.byAliveMonster)
         
     def to_string(self):
         return f"Hunt for : {self.monsterName}"

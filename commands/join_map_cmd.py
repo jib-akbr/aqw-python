@@ -11,7 +11,7 @@ class JoinMapCmd(BaseCommand):
         self.safeLeave = safeLeave
     
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.join_map(self.mapName, self.roomNumber, self.safeLeave)
+        await cmd.join_map(self.mapName, self.roomNumber, self.safeLeave)
         
     def to_string(self):
         if self.roomNumber != None:

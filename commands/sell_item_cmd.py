@@ -10,7 +10,7 @@ class SellItemCmd(BaseCommand):
         self.qty = qty = qty
     
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.sell_item(self.item_name, self.qty)
+        await cmd.sell_item(self.item_name, self.qty)
         
     def to_string(self):
         return f"Sell : {self.item_name}"

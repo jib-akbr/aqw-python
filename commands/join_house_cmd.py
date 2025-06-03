@@ -9,7 +9,7 @@ class JoinHouseCmd(BaseCommand):
         self.safeLeave = safeLeave
     
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.join_house(self.houseName, self.safeLeave)
+        await cmd.join_house(self.houseName, self.safeLeave)
         
     def to_string(self):
         return f"Goto house : {self.houseName}"

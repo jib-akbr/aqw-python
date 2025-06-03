@@ -9,7 +9,7 @@ class EquipItemCmd(BaseCommand):
         self.item_name = item_name
     
     async def execute(self, bot: Bot, cmd: Command):
-        cmd.equip_item(self.item_name)
+        await cmd.equip_item(self.item_name)
         
     def to_string(self):
         return f"Equip item : {self.item_name}"
