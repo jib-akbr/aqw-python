@@ -20,6 +20,7 @@ from model import Monster
 from model import ItemInventory, ItemType
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
 import time
+import traceback
 
 class Bot:
 
@@ -81,6 +82,8 @@ class Bot:
         self.is_aggro_handler_task_running = False
         self.followed_player_cell = None
         self.subscribers = []
+        self.scroll_id: str = 0
+        self.battle_analyzer: bool = False
 
         self.auto_adjust_skill_delay = autoAdjustSkillDelay
         self.skill_delay_ms = 1300
@@ -350,12 +353,16 @@ class Bot:
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
                 # print(self.player.SKILLS)
+                count_skill = 0
                 for skill in self.player.SKILLS:
                     anim_strl = {
                         "anim" : skill.get("anim", ""),
                         "strl" : skill.get("strl", "")
                     }
                     self.player.skills_ref[skill["ref"]] = anim_strl
+                    self.player.SKILLS[count_skill]["canUseSkill"] = True
+                    self.player.SKILLS[count_skill]["nextUse"] = datetime.now()
+                    count_skill += 1
                 # print(self.player.skills_ref)
             elif cmd == "stu":
                 if data["sta"].get("$tha"):
@@ -365,17 +372,13 @@ class Bot:
                 a = data.get("a")
                 m = data.get("m")
                 p = data.get("p")
+                sarsa = data.get("sarsa")
+                sara = data.get("sara")
                 if anims:
                     for anim in anims:
                         if anim["cInf"] == f"p:{self.user_id}":
                             animStr: str = anim.get("animStr")
                             strl: str = anim.get("strl", "")
-                            # print(self.player.skills_ref)
-                            for key in self.player.skills_ref.keys():
-                                if animStr == self.player.skills_ref[key]["anim"] and strl == self.player.skills_ref[key]["strl"] :
-                                    # print(f"skill cast: {list(self.player.skills_ref.keys()).index(key)}")
-                                    self.player.updateTime(list(self.player.skills_ref.keys()).index(key))
-                                    break
                 if p:
                     player = p.get(self.username)
                     if player:
@@ -401,6 +404,39 @@ class Bot:
                         elif action.get('cmd') == 'aura-':
                             removed_aura = action.get('aura', {}).get('nam')
                             self.player.removeAura(removed_aura)
+                if sarsa:
+                    for sarsaElm in sarsa:
+                        if sarsaElm["cInf"] == f"p:{self.user_id}":
+                            for aSarsa in sarsaElm["a"]:
+                                sarsaType = aSarsa["type"]
+                                sarsaTarget = aSarsa["tInf"]
+                                sarsaActRef = aSarsa["actRef"]
+                                self.debug(Fore.GREEN + "skill casted: " + sarsaActRef + Fore.WHITE)
+                                if "m" in sarsaTarget:
+                                    self.debug(Fore.BLUE + f"[SARSA] [{sarsaType.upper()}] {aSarsa['hp']} DMG to {sarsaTarget}" + Fore.WHITE)
+                                    if self.battle_analyzer:
+                                        self.battle_analyzer_total_damage += aSarsa['hp']
+                                        now = datetime.now()
+                                        if (now - self.battle_analyzer_last_print) >= timedelta(seconds=5):
+                                            self.debug(Fore.RED + f"DPS: {self.battle_analyzer_total_damage / int((datetime.now() - self.battle_analyzer_time_start).total_seconds())}" + Fore.WHITE)
+                                            self.battle_analyzer_last_print = now
+                                else:
+                                    if aSarsa['hp'] < 0:
+                                        self.debug(Fore.BLUE + f"[SARSA] [HEAL] {abs(aSarsa['hp'])} HP to {sarsaTarget}" + Fore.WHITE)
+                                    else:
+                                        self.debug(Fore.BLUE + f"[SARSA] [{sarsaType.upper()}] to {sarsaTarget}" + Fore.WHITE)
+                if sara:
+                    for saraElm in sara:
+                        actionResult = saraElm["actionResult"]
+                        if actionResult["cInf"] == f"p:{self.user_id}" and actionResult["tInf"] == f"p:{self.user_id}":
+                            saraType = actionResult["typ"]
+                            saraTarget = actionResult['tInf']
+                            if saraType == "d":
+                                self.debug(Fore.CYAN + f"[SARA] [HOT] {abs(actionResult['hp'])} HOT to {saraTarget}" + Fore.WHITE)
+                            else:
+                                self.debug(Fore.CYAN + f"[SARA] [{saraType.upper()}] to {saraTarget}" + Fore.WHITE)
+
+
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
                 self.player.SKILLS[5]["strl"] = data["o"]["strl"]
@@ -410,6 +446,9 @@ class Bot:
                         "anim" : self.player.SKILLS[5]["anim"],
                         "strl" : self.player.SKILLS[5]["strl"]
                     }
+                self.player.SKILLS[5]["ref"] = "i1"
+                self.player.SKILLS[5]["canUseSkill"] = True
+                self.player.SKILLS[5]["nextUse"] = datetime.now()
                 self.player.skills_ref["i1"] = anim_strl
                 # print(self.player.skills_ref)
                 # print(f"Skills: {self.player.SKILLS}")
@@ -507,14 +546,17 @@ class Bot:
                             playerBankItem.qty = dropItem.qty_now
                             playerBankItem.char_item_id = dropItem.char_item_id
                             item_name = playerBankItem.item_name
-                        print(f"add items {item_name}. qty now {dropItem.qty_now}")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] add items {item_name}. qty now {dropItem.qty_now}")
                     # Item temp inventory
                     else:
                         playerItem = self.player.get_item_temp_inventory_by_id(itemId)
+                        # print("drop qty", dropItem.qty)
                         if playerItem:
                             playerItem.qty += dropItem.qty
+                            print(f"[{datetime.now().strftime('%H:%M:%S')}] add temp items {playerItem.item_name}. qty now {playerItem.qty}")
                         else:
                             self.player.TEMPINVENTORY.append(dropItem)
+                        
             elif cmd == "turnIn":
                 sItems = data.get("sItems").split(',')
                 for s_item in sItems:
@@ -678,6 +720,10 @@ class Bot:
                 self.run = False  # Stop the bot
             except Exception as e:
                 print(f"Unexpected error in testasync: {e}")
+                tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+                print(tb_str)
+                if self.is_client_connected == False and self.auto_relogin == False:
+                    raise Exception("Connection closed by the server.")
     
     async def read_batch_async(self, conn):
         """
@@ -714,7 +760,10 @@ class Bot:
                 if complete_messages:
                     return complete_messages
             except Exception as e:
-                return None
+                pass
+            finally:
+                if self.is_client_connected == False and self.auto_relogin == False:
+                    raise Exception("Connection closed by the server.")
         return complete_messages
     
     def write_message(self, message):
@@ -757,9 +806,10 @@ class Bot:
         self.write_message(packet)
         self.do_wait(500)
 
-    def use_scroll(self, monsterid, max_target, scroll_id):
+    def use_scroll(self, monsterid, max_target):
         self.target = [f"i1>m:{i}" for i in monsterid][:max_target]
-        self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%{scroll_id}%wvz%")
+        self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%{self.scroll_id}%wvz%")
+        # print(f"%xt%zm%gar%1%0%{','.join(self.target)}%{self.scroll_id}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%{scroll_id}%wvz%")
         
     def use_potion(self, potion_id):
@@ -910,6 +960,17 @@ class Bot:
         
     def add_cmds(self, cmds):
         self.cmds.extend(cmds)
+    
+    def start_battle_analyzer(self):
+        self.battle_analyzer: bool = True
+        self.battle_analyzer_time_start: datetime = datetime.now()
+        self.battle_analyzer_total_damage: int = 0
+        self.battle_analyzer_last_print: datetime = self.battle_analyzer_time_start
+    
+    def stop_battle_analyzer(self):
+        self.battle_analyzer: bool = False
+        self.battle_analyzer_time_start: datetime = None
+        self.battle_analyzer_total_damage: int = 0
 
 class CustomError(Exception):
     """Exception raised for custom error in the application."""
