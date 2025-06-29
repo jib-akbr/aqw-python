@@ -93,19 +93,29 @@ class Player:
         return ["", 0]
     
     def canUseSkill(self, skillNumber):
-        skill = self.SKILLUSED.get(skillNumber)
-        skillDetail = self.SKILLS[skillNumber]
-        if skill:
-            if datetime.now() > skill:
-                return True
-            else:
-                return False
-        return True
+        if skillNumber > len(self.SKILLS):
+            return False
+        skills = self.SKILLS[skillNumber]
+        if datetime.now() > skills["nextUse"]:
+            return True
+        return False
 
-    def updateTime(self, skillNumber: int):
+    def updateNextUse(self, skillNumber: int, delayms: int = 0) -> None:
+        skills = self.SKILLS[skillNumber]
+        if delayms == 0:
+            cooldown = float(skills["cd"]) * (1 - self.CDREDUCTION)
+            self.SKILLS[skillNumber]["nextUse"] = datetime.now() + timedelta(milliseconds=cooldown)
+        else:
+            self.SKILLS[skillNumber]["nextUse"] = datetime.now() + timedelta(milliseconds=delayms)
+
+    def getCooldown(self, skillNumber: int) -> float:
+        skills = self.SKILLS[skillNumber]
+        return float(skills["cd"]) * (1 - self.CDREDUCTION)
+
+    def updateTime(self, skillNumber: int, force_update: bool = False):
         skill_detail = self.SKILLS[skillNumber]
         cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION) + 200
-        self._update_skill_time(skillNumber, cooldown)
+        self._update_skill_time(skillNumber, cooldown, force_update)
 
     def delayAllSkills(self, except_skill: int, delay_ms: float = 1500):
         """this is to delay skill to prevent server warning 'Please slow down'"""
@@ -113,7 +123,9 @@ class Player:
             return
         for skill_number in range(len(self.SKILLS)):
             if except_skill != skill_number and skill_number != 0:
-                self._update_skill_time(skill_number, float(delay_ms))
+                self.updateNextUse(skill_number, delay_ms)
+            # elif skill_number == except_skill:
+            #     self._update_skill_time(skill_number, float(500))
     
     def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):
         new_cooldown_time = datetime.now() + timedelta(milliseconds=time_offset_ms)

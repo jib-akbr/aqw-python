@@ -3,7 +3,7 @@ from typing import List, Union
 import time
 from functools import wraps
 from inspect import iscoroutinefunction
-from datetime import datetime
+from datetime import datetime, timedelta
 from colorama import Fore
 from model.inventory import ItemType, ItemInventory, ScrollType
 from model.shop import Shop
@@ -58,7 +58,6 @@ class Command:
         self.quest_to_check: int = None
         self.is_green_quest_var: bool = None
         
-        self.skills: list = []
         if init_handler:
             self.bot.subscribe(self.message_handler)
 
@@ -232,15 +231,26 @@ class Command:
             else:
                 cell_monsters.sort(key=lambda m: m.current_hp)
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
-            if scroll_id != 0 and index == 5:
-                self.bot.use_scroll(final_ids, max_target, scroll_id)
-            else:
+            if index == 5:
+                self.bot.use_scroll(final_ids, max_target)
+            if len(final_ids) > 0:
                 self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
-        self.bot.canuseskill = False
-        self.bot.player.delayAllSkills(except_skill=index, delay_ms=1000)
+        # self.bot.canuseskill = False
+        # self.bot.player.delayAllSkills(except_skill=index, delay_ms=1200)
 
+        await self.sleep(200)
+        self.bot.player.updateNextUse(index)
+        self.bot.player.SKILLS[int(index)]["canUseSkill"] = False
+        if index != 0:
+            self.bot.player.delayAllSkills(except_skill=index, delay_ms=600)
+
+    
+    @check_alive
+    def do_pwd(self, monster_id: str):
+        # %xt%zm%gar%1%3%p6>m:1%wvz%
+        self.bot.write_message(f"%xt%zm%gar%1%3%p6>m:{monster_id}%wvz%")
 
     @check_alive
     async def sleep(self,  milliseconds: int) -> None:
@@ -415,6 +425,7 @@ class Command:
         for item in self.bot.player.INVENTORY:
             if item.item_name.lower() == item_name.lower():
                 packet = f"%xt%zm%geia%{self.bot.areaId}%{item_type.value}%{item.s_meta}%{item.item_id}%"
+                self.bot.scroll_id = item.item_id
                 self.bot.write_message(packet)
                 await asyncio.sleep(1)
                 break
@@ -445,6 +456,7 @@ class Command:
                     return True
         return False
     
+    @check_alive
     def get_monster_hp(self, monster: str) -> int:
         if monster.startswith('id.'):
             monster = monster.split('.')[1]
@@ -536,6 +548,7 @@ class Command:
                 return loaded_shop
         return None
     
+    @check_alive
     def hp_below_percentage(self, percent: int):
         return ((self.bot.player.CURRENT_HP / self.bot.player.MAX_HP) * 100) < percent
     
