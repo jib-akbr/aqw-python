@@ -550,7 +550,6 @@ class Bot:
                     # Item temp inventory
                     else:
                         playerItem = self.player.get_item_temp_inventory_by_id(itemId)
-                        # print("drop qty", dropItem.qty)
                         if playerItem:
                             playerItem.qty += dropItem.qty
                             print(f"[{datetime.now().strftime('%H:%M:%S')}] add temp items {playerItem.item_name}. qty now {playerItem.qty}")
@@ -760,7 +759,7 @@ class Bot:
                 if complete_messages:
                     return complete_messages
             except Exception as e:
-                pass
+                return None
             finally:
                 if self.is_client_connected == False and self.auto_relogin == False:
                     raise Exception("Connection closed by the server.")
