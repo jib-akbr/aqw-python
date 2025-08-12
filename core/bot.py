@@ -34,6 +34,7 @@ class Bot:
             showChat: bool = True,
             autoRelogin: bool = False,
             followPlayer: str = "",
+            slavesPlayer: List[str] = [],
             isScriptable: bool = False,
             farmClass: str = None,
             soloClass: str = None,
@@ -48,6 +49,7 @@ class Bot:
         self.items_drop_whitelist: list[str] = itemsDropWhiteList
         self.auto_relogin = autoRelogin
         self.follow_player = followPlayer
+        self.slaves_player = slavesPlayer
         self.isScriptable = isScriptable
         self.farmClass = farmClass
         self.soloClass = soloClass
@@ -350,6 +352,7 @@ class Bot:
             elif cmd == "uotls":
                 if str(data['unm']) == str(self.player.USER):
                     self.player.MAX_HP = int(data['o'].get('intHPMax', self.player.MAX_HP))
+                    
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
                 # print(self.player.SKILLS)
@@ -379,18 +382,25 @@ class Bot:
                         if anim["cInf"] == f"p:{self.user_id}":
                             animStr: str = anim.get("animStr")
                             strl: str = anim.get("strl", "")
+                            
+                # update player status
                 if p:
                     player = p.get(self.username)
                     if player:
                         self.player.CURRENT_HP = player.get("intHP", self.player.CURRENT_HP)
                         self.player.IS_IN_COMBAT = int(player.get("intState", self.player.IS_IN_COMBAT)) == 2
+                
+                # update monsters status
                 if m:
                     for mon_map_id, mon_condition in m.items():
                         for mon in self.monsters:
                             if mon.mon_map_id == mon_map_id:
-                                mon.is_alive = int(mon_condition.get("intState", mon.is_alive)) > 0
                                 mon.current_hp = int(mon_condition.get("intHP", mon.current_hp))
+                                mon.is_alive = mon.current_hp > 0
+                                # print(f"[{datetime.now().strftime('%H:%M:%S')}] Monster {mon.mon_name} ({mon.mon_map_id}) HP: {mon.current_hp}, Alive: {mon.is_alive}")
                                 break
+                            
+                # update auras
                 if a:
                     for action in a:
                         tInf = action.get('tInf')
