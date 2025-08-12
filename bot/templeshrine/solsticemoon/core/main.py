@@ -12,7 +12,7 @@ cleared_count = 0
 
 # MAIN
 async def main(cmd: Command):
-    global do_taunt, timeleapse, log_taunt
+    global do_taunt, timeleapse, log_taunt, cleared_count
     
     def print_debug(message):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.WHITE}")
@@ -20,7 +20,7 @@ async def main(cmd: Command):
     async def enter_dungeon():
         global timeleapse
         timeleapse = time.monotonic() 
-        await cmd.send_packet("%xt%zm%dungeonQueue%25127%midnightsun%")
+        await cmd.send_packet("%xt%zm%dungeonQueue%24946%solsticemoon%")
         await cmd.sleep(2000)
         
     async def to_next_cell():
@@ -94,7 +94,7 @@ async def main(cmd: Command):
     await enter_dungeon()
     
     # Waiting for the dungeon queue
-    while cmd.is_not_in_map("midnightsun"):
+    while cmd.is_not_in_map("solsticemoon"):
         print_debug("Waiting for dungeon queue...")
         await cmd.sleep(200)
 
@@ -111,11 +111,11 @@ async def main(cmd: Command):
                 if log_taunt:
                     print_debug(f"[{cmd.bot.player.CELL}] Doing taunt...")
                 await cmd.sleep(1000)
-                await cmd.use_skill(5, target_monsters="Dying Light")
+                await cmd.use_skill(5, target_monsters="Hollow Midnight")
                 await cmd.sleep(1000)
                 do_taunt = False
             else:
-                await cmd.use_skill(skill_list[skill_index], "Dying Light,Dawn Knight")
+                await cmd.use_skill(skill_list[skill_index], "Lunar Haze")
                 skill_index += 1
                 if skill_index >= len(skill_list):
                     skill_index = 0
