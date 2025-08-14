@@ -516,8 +516,11 @@ class Command:
     def wait_count_player(self, player_count: int):
         return len(self.bot.user_ids) >= player_count
     
-    def get_player_cell(self) -> list[str]:
-        return self.bot.player.getPlayerCell()
+    def get_player_cell(self) -> str:
+        return self.bot.player.getPlayerCell()[0]
+    
+    def get_player_pad(self) -> str:
+        return self.bot.player.getPlayerCell()[1]
     
     def get_player_position_xy(self) -> list[int]:
         return self.bot.player.getPlayerPositionXY()
@@ -629,6 +632,12 @@ class Command:
             else:
                 await self.sleep(100)
         return False
+    
+    async def send_packet(self, packet: str):
+        if not self.isStillConnected():
+            return
+        self.bot.write_message(packet)
+        await asyncio.sleep(0.5)
 
     @check_alive
     async def is_completed_before(self, quest_id: int) -> bool:

@@ -9,3 +9,4 @@ async def death_handler_task(bot: 'Bot'):
     bot.jump_cell(bot.player.CELL, bot.player.PAD)
     bot.player.ISDEAD = False
     print("Stopping death handler...")
+    print("Spawned at cell:", bot.player.CELL, "pad:", bot.player.PAD)
