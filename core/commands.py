@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from colorama import Fore
 from model.inventory import ItemType, ItemInventory, ScrollType
 from model.shop import Shop
+from model import Monster
 import json
 
 def check_alive(func):
@@ -57,6 +58,7 @@ class Command:
 
         self.quest_to_check: int = None
         self.is_green_quest_var: bool = None
+        self.is_completed_before_var: bool = None
         
         if init_handler:
             self.bot.subscribe(self.message_handler)
@@ -100,7 +102,6 @@ class Command:
             await self.sleep(1000)
             if quest_id in self.bot.failed_get_quest_datas:
                 return
-        print("quest accepted:", quest_id)
     
     @check_alive
     async def ensure_turn_in_quest(self, quest_id: int, item_id = -1) -> None:
@@ -153,8 +154,10 @@ class Command:
     
     @check_alive
     async def jump_to_monster(self, monsterName: str, byMostMonster: bool = True, byAliveMonster: bool = False) -> None:
+        if monsterName.startswith('id.'):
+            monsterName = monsterName.split('.')[1]
         for monster in self.bot.monsters:
-            if monster.mon_name.lower() == monsterName.lower() \
+            if (monster.mon_name.lower() == monsterName.lower() or monster.mon_map_id == monsterName )\
                     and monster.is_alive \
                     and self.bot.player.CELL == monster.frame:
                 return
@@ -169,7 +172,7 @@ class Command:
                 await asyncio.sleep(1)
                 return
         for monster in self.bot.monsters:
-            if monster.mon_name.lower() == monsterName.lower() \
+            if (monster.mon_name.lower() == monsterName.lower() or monster.mon_map_id == monsterName )\
                     and monster.is_alive \
                     and self.bot.player.CELL != monster.frame:
                 # TODO need to handle the rigth pad
@@ -259,6 +262,7 @@ class Command:
     @check_alive
     async def accept_quest(self, quest_id: int) -> None:
         self.bot.accept_quest(quest_id)
+        print("trying accept quest:", quest_id)
         await asyncio.sleep(1)
 
     def quest_not_in_progress(self, quest_id: int) -> bool:
@@ -478,6 +482,14 @@ class Command:
                 return round(((mon.current_hp/mon.max_hp)*100), 2)
         # this mean not get the desired monster
         return -1
+    
+    def get_monster(self, monster: str) -> Monster:
+        if monster.startswith('id.'):
+            monster = monster.split('.')[1]
+        for mon in self.bot.monsters:
+            if mon.mon_name.lower() == monster.lower() or mon.mon_map_id == monster:
+                return mon
+        return None
 
     @check_alive
     async def get_map_item(self, map_item_id: int, qty: int = 1):
@@ -486,8 +498,9 @@ class Command:
             await asyncio.sleep(1)
 
     @check_alive
-    async def accept_quest_bulk(self, quest_id: int, increament: int, ensure:bool = False):
-        for i in range(increament):
+    async def accept_quest_bulk(self, quest_id: int, increment: int, ensure:bool = False):
+        print(f"accepting quest from {quest_id} to {quest_id + increment}")
+        for i in range(increment):
             if ensure:
                 await self.ensure_accept_quest(quest_id + i)
             elif not ensure:
@@ -617,6 +630,19 @@ class Command:
                 await self.sleep(100)
         return False
 
+    @check_alive
+    async def is_completed_before(self, quest_id: int) -> bool:
+        await self.turn_in_quest(quest_id)
+        while(self.isStillConnected()):
+            if self.is_completed_before_var is not None:
+                output = self.is_completed_before_var
+                # print(f"{quest_id} is {self.is_green_quest_var}")
+                self.is_completed_before_var = None
+                return output
+            else:
+                await self.sleep(100)
+        return False
+
     def message_handler(self, message):
         if message:
             if self.is_valid_json(message):
@@ -640,12 +666,13 @@ class Command:
                     pass
                 else:
                     if int(quest_id) == self.quest_to_check:
-                        if "Missing Turn In Item" in ccqr_msg:
+                        if "Missing Turn In Item" in ccqr_msg: # can do this quest but missing the requirements
                             self.is_green_quest_var = True
-                        if "Missing Quest Progress" in ccqr_msg:
+                        if "Missing Quest Progress" in ccqr_msg: # green but missing requirments (red text above)
                             self.is_green_quest_var = False
-                        if "One Time Quest Only" in ccqr_msg:
+                        if "One Time Quest Only" in ccqr_msg: # quest completed
                             self.is_green_quest_var = False
+                            self.is_completed_before_var = True
 
     def is_valid_json(self, s):
         try:

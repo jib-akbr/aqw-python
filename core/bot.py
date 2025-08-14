@@ -376,7 +376,7 @@ class Bot:
                 sara = data.get("sara")
                 if anims:
                     for anim in anims:
-                        if anim["cInf"] == f"p:{self.user_id}":
+                        if anim["cInf"] == f"p:{self.username_id}":
                             animStr: str = anim.get("animStr")
                             strl: str = anim.get("strl", "")
                 if p:
@@ -406,7 +406,7 @@ class Bot:
                             self.player.removeAura(removed_aura)
                 if sarsa:
                     for sarsaElm in sarsa:
-                        if sarsaElm["cInf"] == f"p:{self.user_id}":
+                        if sarsaElm["cInf"] == f"p:{self.username_id}":
                             for aSarsa in sarsaElm["a"]:
                                 sarsaType = aSarsa["type"]
                                 sarsaTarget = aSarsa["tInf"]
@@ -428,7 +428,7 @@ class Bot:
                 if sara:
                     for saraElm in sara:
                         actionResult = saraElm["actionResult"]
-                        if actionResult["cInf"] == f"p:{self.user_id}" and actionResult["tInf"] == f"p:{self.user_id}":
+                        if actionResult["cInf"] == f"p:{self.username_id}" and actionResult["tInf"] == f"p:{self.username_id}":
                             saraType = actionResult["typ"]
                             saraTarget = actionResult['tInf']
                             if saraType == "d":
@@ -830,10 +830,15 @@ class Bot:
     def use_skill_to_player(self, skill, max_target):
         if not self.check_is_skill_safe(skill):
             return
-        self.target = [f"a{skill}>p:{i}" for i in self.user_ids][:max_target]
+        self.target = [f"a{skill}>p:{i}" for i in self.user_ids][:max_target-1]
+        self.target.insert(0, f"a{skill}>p:{self.username_id}")
+        final_target = []
+        for tgt in self.target:
+            if tgt not in final_target:
+                final_target.append(tgt)
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: {self.target}")
-        self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
+        self.write_message(f"%xt%zm%gar%1%0%{','.join(final_target)}%wvz%")
         
     def check_is_skill_safe(self, skill: int):
         conditions = {
@@ -914,10 +919,12 @@ class Bot:
         self.player.setPlayerPositionXY(x, y)
     
     def find_best_cell(self, monster_name, byMostMonster: bool = True, byAliveMonster: bool = False):
+        if monster_name.startswith('id.'):
+            monster_name = monster_name.split('.')[1]
         if byMostMonster:
-            filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower()]
+            filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower() or mon.mon_map_id == monster_name]
         if byAliveMonster:
-            filtered_monsters = [mon for mon in self.monsters if mon.mon_name.lower() == monster_name.lower() and mon.is_alive]
+            filtered_monsters = [mon for mon in self.monsters if (mon.mon_name.lower() == monster_name.lower() or mon.mon_map_id == monster_name) and mon.is_alive]
 
         if not filtered_monsters:
             return None
