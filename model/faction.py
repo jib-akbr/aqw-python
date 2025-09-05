@@ -4,13 +4,13 @@
 #     'sName': 'Aegis',
 #     'iRep': '302500'
 #   }
-
+from core.utils import normalize
 
 class Faction:
     def __init__(self, faction: dict):
         self.faction_id: int = int(faction.get('FactionID', 0))
         self.char_faction_id: str = str(faction.get('CharFactionID', ''))
-        self.faction_name: str = faction.get('sName', '')
+        self.faction_name: str = normalize(faction.get('sName', ''))
         self.rep: int = int(faction.get('iRep', 0))
     
     def get_rep(self) -> int:

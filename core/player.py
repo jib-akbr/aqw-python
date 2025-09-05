@@ -272,4 +272,10 @@ class Player:
             if fac.faction_id == faction_id:
                 fac.add_rep(faction_rep)
                 return
-            
+    
+    def getFactionRank(self, faction_name: str) -> int:
+        normalized_faction = normalize(faction_name)
+        for fac in self.FACTIONS:
+            if fac.faction_name == normalized_faction:
+                return fac.get_rank()
+        return 0
