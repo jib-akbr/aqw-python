@@ -1,4 +1,5 @@
 from core.utils import normalize
+from model.aura import Aura
 
 class Monster:
     _mon_name: str = None
@@ -20,3 +21,36 @@ class Monster:
         self.max_hp: int = json_data['intHPMax']
         self.tes: str = str(json_data.get('tes', None))
         self.frame: str = None
+        self.AURAS: list[Aura] = []
+
+    def addAura(self, auras:list):
+        for aura in auras:
+            is_new = aura.get('isNew', False)
+            name = normalize(aura.get('nam'))
+            if is_new:
+                self.AURAS.append(Aura(aura))
+            else:
+                for existing_aura in self.AURAS:
+                    if existing_aura.name == name:
+                        existing_aura.refresh(aura.get('dur', 0))
+    
+    def removeAura(self, auraName: str):
+        normalized_name = normalize(auraName)
+        for aura in self.AURAS[:]:
+            if aura.name == normalized_name:
+                self.AURAS.remove(aura)
+                break
+
+    def getAura(self, auraName: str) -> Aura:
+        normalized_name = normalize(auraName)
+        for aura in self.AURAS:
+            if aura.name == normalized_name and not aura.is_expired():
+                return aura
+        return None
+
+    def hasAura(self, auraName: str) -> bool:
+        normalized_name = normalize(auraName)
+        for aura in self.AURAS:
+            if aura.name == normalized_name and not aura.is_expired():
+                return True
+        return False

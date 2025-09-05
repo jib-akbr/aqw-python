@@ -9,6 +9,7 @@ from model.inventory import ItemType, ItemInventory, ScrollType
 from model.shop import Shop
 from model import Monster
 import json
+from core.utils import normalize
 
 def check_alive(func):
     @wraps(func)
@@ -409,7 +410,7 @@ class Command:
         is_equipped = False
         s_type = None
         for item in self.bot.player.INVENTORY:
-            if item.item_name == item_name.lower():
+            if normalize(item.item_name.lower()) == normalize(item_name.lower()):
                 packet = f"%xt%zm%equipItem%{self.bot.areaId}%{item.item_id}%"
                 self.bot.write_message(packet)
                 is_equipped = True
@@ -465,7 +466,7 @@ class Command:
         if monster.startswith('id.'):
             monster = monster.split('.')[1]
         for mon in self.bot.monsters:
-            if mon.mon_name.lower() == monster.lower() or mon.mon_map_id == monster:
+            if mon.mon_name.lower() == monster.lower() or mon.mon_map_id == monster and mon.is_alive:
                 return mon.current_hp
             elif monster == "*":
                 return mon.current_hp

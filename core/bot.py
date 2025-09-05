@@ -17,7 +17,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
-from model import ItemInventory, ItemType
+from model import ItemInventory, ItemType, Faction
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
 import time
 import traceback
@@ -54,6 +54,8 @@ class Bot:
         self.farmClass = farmClass
         self.soloClass = soloClass
         self.restart_on_afk = restartOnAFK
+
+        self.auto_relogin = False # sementara diset ke False untuk cegah stop_bot() di function read_server_in_background()
         
         self.is_char_load_complete= False
         self.is_joining_map = False
@@ -297,13 +299,15 @@ class Bot:
                 self.areaName = data["areaName"] #"yulgar-99999"
                 self.areaId = data["areaId"]
                 self.strMapName = data["strMapName"] #"yulgar"
-                self.monsters = []
+                self.monsters: list[Monster] = []
                 for i_uo_branch in uo_branch:
                     if (i_uo_branch["uoName"] == self.player.USER.lower()):
                         self.player.PAD = i_uo_branch["strPad"]
                         self.player.CELL = i_uo_branch["strFrame"]
                     if (i_uo_branch["uoName"] == self.follow_player.lower()):
                         self.followed_player_cell = i_uo_branch["strFrame"]
+                    if (i_uo_branch["uoName"] == self.player.USER):
+                        self.player.setIsInCombat(i_uo_branch["intState"])
                 if mon_def and mon_branch and mon_map:
                     for i_mon_branch in mon_branch:
                         self.monsters.append(Monster(i_mon_branch))
@@ -340,7 +344,9 @@ class Bot:
                 self.is_char_load_complete = True
                 for item in data["items"]:
                     self.player.INVENTORY.append(ItemInventory(item))
-                self.player.FACTIONS = data.get("factions", [])
+                for faction in data.get("factions", []):
+                    self.player.addFaction(Faction(faction))
+
             # on monster spwaned in map
             elif cmd == "mtls":
                 for mon in self.monsters:
@@ -352,6 +358,7 @@ class Bot:
             elif cmd == "uotls":
                 if str(data['unm']) == str(self.player.USER):
                     self.player.MAX_HP = int(data['o'].get('intHPMax', self.player.MAX_HP))
+                    self.player.setIsInCombat(data["o"].get("intState"))
                     
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
@@ -388,7 +395,9 @@ class Bot:
                     player = p.get(self.username)
                     if player:
                         self.player.CURRENT_HP = player.get("intHP", self.player.CURRENT_HP)
-                        self.player.IS_IN_COMBAT = int(player.get("intState", self.player.IS_IN_COMBAT)) == 2
+                        # self.player.IS_IN_COMBAT = int(player.get("intState", self.player.IS_IN_COMBAT)) == 2
+                        self.player.setIsInCombat(player.get("intState"))
+                        
                 
                 # update monsters status
                 if m:
@@ -398,22 +407,30 @@ class Bot:
                                 mon.current_hp = int(mon_condition.get("intHP", mon.current_hp))
                                 mon.is_alive = mon.current_hp > 0
                                 # print(f"[{datetime.now().strftime('%H:%M:%S')}] Monster {mon.mon_name} ({mon.mon_map_id}) HP: {mon.current_hp}, Alive: {mon.is_alive}")
-                                break
                             
                 # update auras
                 if a:
                     for action in a:
                         tInf = action.get('tInf')
+                        action_cmd = action.get('cmd')
+
+                        # update aura for monster
                         if tInf.startswith('m'):
-                            # TODO for monster
-                            pass
-                        if self.username_id not in tInf:
-                            continue
-                        if action.get('cmd') == 'aura+':
-                            self.player.addAura(action.get('auras', []))
-                        elif action.get('cmd') == 'aura-':
-                            removed_aura = action.get('aura', {}).get('nam')
-                            self.player.removeAura(removed_aura)
+                            for mon in self.monsters:
+                                if f"m:{mon.mon_map_id}" == tInf:
+                                    if 'aura+' in action_cmd:
+                                        mon.addAura(action.get('auras', []))
+                                    elif 'aura-' in action_cmd:
+                                        removed_aura = action.get('aura', {}).get('nam')
+                                        mon.removeAura(removed_aura) 
+                        
+                        # update aura for player
+                        if self.username_id in tInf:
+                            if 'aura+' in action_cmd:
+                                self.player.addAura(action.get('auras', []))
+                            elif 'aura' in action_cmd:
+                                removed_aura = action.get('aura', {}).get('nam')
+                                self.player.removeAura(removed_aura)
                 if sarsa:
                     for sarsaElm in sarsa:
                         if sarsaElm["cInf"] == f"p:{self.username_id}":
@@ -438,15 +455,17 @@ class Bot:
                 if sara:
                     for saraElm in sara:
                         actionResult = saraElm["actionResult"]
-                        if actionResult["cInf"] == f"p:{self.username_id}" and actionResult["tInf"] == f"p:{self.username_id}":
+                        saraCInf = actionResult["cInf"]
+                        saraTInf = actionResult["tInf"]
+                        if saraCInf == f"p:{self.username_id}" and saraTInf == f"p:{self.username_id}":
                             saraType = actionResult["typ"]
-                            saraTarget = actionResult['tInf']
                             if saraType == "d":
-                                self.debug(Fore.CYAN + f"[SARA] [HOT] {abs(actionResult['hp'])} HOT to {saraTarget}" + Fore.WHITE)
+                                self.debug(Fore.CYAN + f"[SARA] [HOT] {abs(actionResult['hp'])} HOT to {saraTInf}" + Fore.WHITE)
                             else:
-                                self.debug(Fore.CYAN + f"[SARA] [{saraType.upper()}] to {saraTarget}" + Fore.WHITE)
-
-
+                                self.debug(Fore.CYAN + f"[SARA] [{saraType.upper()}] to {saraTInf}" + Fore.WHITE)
+                        elif saraCInf.startswith("m") and saraTInf == f"p:{self.username_id}":
+                            saraType = actionResult["type"]
+                            self.debug(Fore.CYAN + f"[SARA] [{saraType.upper()}] {actionResult['hp']} DMG to {saraTInf}" + Fore.WHITE)
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
                 self.player.SKILLS[5]["strl"] = data["o"]["strl"]
@@ -526,12 +545,17 @@ class Bot:
                         "exp_farmed": self.player.EXPFARMED
                     }
                     self.debug(Fore.BLUE + str(debug_data_exp) + Fore.WHITE)
+                intRep = data.get("iRep", 0)
+                if intRep > 0:
+                    # {"t":"xt","b":{"r":-1,"o":{"FactionID":75,"cmd":"addGoldExp","intGold":0,"intExp":0,"typ":"q","bonusRep":1000,"iRep":3000}}}
+                    self.player.addRepToFaction(data.get('FactionID', 0), data.get('iRep', 0))
                 self.debug(Fore.YELLOW + str(debug_data_gold) + Fore.WHITE)
             elif cmd == "dropItem":
                 dropItems = data.get('items')
+                lowered_droplist= [item.lower() for item in self.items_drop_whitelist]
                 for itemDrop in dropItems.values():
-                    itemDrop = ItemInventory(itemDrop)
-                    if itemDrop.item_name in [item.lower() for item in self.items_drop_whitelist]:
+                    itemDrop: ItemInventory = ItemInventory(itemDrop)
+                    if itemDrop.item_name.lower() in lowered_droplist:
                         print(f"get drop {itemDrop.item_name}")
                         self.get_drop(self.username_id, itemDrop.item_id)
                         self.player.INVENTORY.append(itemDrop)
@@ -539,7 +563,7 @@ class Bot:
             elif cmd == "addItems":
                 dropItems = data.get('items')
                 for itemId, dropItem in dropItems.items():
-                    dropItem = ItemInventory(dropItem)
+                    dropItem: ItemInventory = ItemInventory(dropItem)
                     # Item inventory
                     if dropItem.char_item_id:
                         playerItem = self.player.get_item_inventory_by_id(itemId)
@@ -624,9 +648,12 @@ class Bot:
                 elif data["bSuccess"] == 0:
                     if quest_id not in self.failed_get_quest_datas:
                         self.failed_get_quest_datas.append(quest_id)
+            elif cmd == "addFaction":
+                # {"t":"xt","b":{"r":-1,"o":{"cmd":"addFaction","faction":{"FactionID":"75","bitSuccess":"1","CharFactionID":"48707365","sName":"Yew Mountains","iRep":"0"}}}}
+                self.player.addFaction(Faction(data["faction"]))
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
-                self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.01]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
+                self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.012]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
             elif "joinOK" in msg:
                 self.extract_user_ids(msg)
             elif "userGone" in msg:
@@ -665,7 +692,7 @@ class Bot:
                     await self.ensure_leave_from_combat(always=True)
             elif "uotls" in msg:
                 username = msg.split('%')[4]
-                if username == self.follow_player and "strPad" in msg and "strFrame" in msg:
+                if username == self.follow_player:
                     movement = msg.split('%')[5]
                     cell = None
                     pad = None
@@ -677,7 +704,7 @@ class Bot:
                             pad = value
                     if cell != self.player.CELL:
                         self.followed_player_cell = cell
-                        self.jump_cell(cell, pad)
+                        # self.jump_cell(cell, pad)
             elif "respawnMon" in msg:
                 pass
             elif "chatm" in msg:
@@ -830,7 +857,10 @@ class Bot:
         #     return
         if not monsters_id:
             return
-        # print("SSS", skill, monsters_id, max_target)
+        for mon in self.monsters:
+            if mon.mon_map_id == str(monsters_id[0]):
+                self.player.setLastTarget(mon)
+                break
         self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
@@ -916,7 +946,7 @@ class Bot:
             self.jump_cell(self.player.CELL, self.player.PAD)
             await asyncio.sleep(sleep_ms/1000)
         
-    def jump_cell(self, cell, pad):
+    def jump_cell(self, cell, pad = "Left"):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"
         self.player.CELL = cell
         self.player.PAD = pad
