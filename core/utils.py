@@ -1,3 +1,5 @@
+import json
+
 def checkOperator(obj1, obj2, operator: str):
     flag = False
     if operator == ">=":
@@ -18,3 +20,10 @@ def checkOperator(obj1, obj2, operator: str):
 
 def normalize(text: str):
     return text.lower().strip().replace("`", "\'").replace("\❜", "\'")
+
+def is_valid_json(s):
+    try:
+        json.loads(s)
+        return True
+    except json.JSONDecodeError:
+        return False
