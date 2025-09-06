@@ -37,7 +37,7 @@ class Bot:
             isScriptable: bool = False,
             farmClass: str = None,
             soloClass: str = None,
-            restartOnAFK: bool = False,
+            restartOnAFK: bool = True,
             autoAdjustSkillDelay: bool = False
             ):
         self.roomNumber = roomNumber
@@ -212,7 +212,10 @@ class Bot:
             messages = self.read_batch(self.client_socket)
             if messages:
                 for msg in messages:
-                    await self.handle_server_response(msg)
+                    try:
+                        await self.handle_server_response(msg)
+                    except Exception as e:
+                        print(f"err: {e}")
                     
             # do wait if any,its different than cmdDelay
             await asyncio.sleep(self.wait_ms)
@@ -257,9 +260,9 @@ class Bot:
             if cmd_string:
                 cmd_string = cmd_string.split(':')
                 if len(cmd_string) > 1:
-                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}:" + Fore.WHITE + cmd_string[1] + Fore.WHITE)
+                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}:" + Fore.RESET + cmd_string[1])
                 else:
-                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.WHITE)
+                    print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.index}] {cmd_string[0]}" + Fore.RESET)
         if not command.skip_delay:  # when not skip delay, execute cmd after print its text
             await command.execute(self, self.command)
             await asyncio.sleep(self.cmdDelay/1000)
@@ -383,6 +386,7 @@ class Bot:
                     player = p.get(self.username)
                     if player:
                         self.player.CURRENT_HP = player.get("intHP", self.player.CURRENT_HP)
+                        self.player.CURRENT_MP = player.get("intMP", self.player.CURRENT_MP)
                         self.player.IS_IN_COMBAT = int(player.get("intState", self.player.IS_IN_COMBAT)) == 2
                 if m:
                     for mon_map_id, mon_condition in m.items():
@@ -687,7 +691,7 @@ class Bot:
                 if self.isScriptable and self.auto_relogin:
                     print("Relogin and restart bot on AFK...")
                     await self.relogin_and_restart(async_bot=self.bot_main)
-                elif not self.isScriptable:
+                elif not self.isScriptable and self.restart_on_afk:
                     print("Restart cmds on AFK...")
                     self.index = 0
                     pass
@@ -760,7 +764,7 @@ class Bot:
                 if complete_messages:
                     return complete_messages
             except Exception as e:
-                pass
+                return None
             finally:
                 if self.is_client_connected == False and self.auto_relogin == False:
                     raise Exception("Connection closed by the server.")
