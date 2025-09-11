@@ -19,7 +19,7 @@ def checkOperator(obj1, obj2, operator: str):
     return flag
 
 def normalize(text: str):
-    return text.lower().strip().replace("`", "\'").replace("\❜", "\'")
+    return text.lower().strip().replace("`", "'").replace("❜", "'").replace("’", "'")
 
 def is_valid_json(s):
     try:

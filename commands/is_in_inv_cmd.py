@@ -1,3 +1,4 @@
+from colorama import Fore
 from core.bot import Bot
 from core.commands import Command
 from abstracts.base_command import BaseCommand
@@ -18,4 +19,4 @@ class IsInInvCmd(BaseCommand):
             bot.index += 1
         
     def to_string(self):
-        return f"Is in inv : {'[Temp]' * self.isTemp} {self.itemName} {self.inInv[1]} {self.operator} {self.itemQty} "
+        return f"Is in inv : {'[Temp]' * self.isTemp} {self.itemName} " + Fore.YELLOW + f"{self.inInv[1]} {self.operator} {self.itemQty}" + Fore.RESET
