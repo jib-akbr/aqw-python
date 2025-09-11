@@ -10,17 +10,18 @@ from xml.etree import ElementTree
 import xml.etree.ElementTree as ET
 from collections import deque
 from datetime import datetime, timedelta
-from colorama import Fore, Back, Style
+from colorama import Fore, Back, Style, init
 import threading
 import inspect
 import asyncio
 from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
-from model import ItemInventory, ItemType, Faction
+from model import ItemInventory, ItemType, Faction, PlayerArea
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
 import time
 import traceback
+init(autoreset=True, convert=True)
 
 class Bot:
 
@@ -96,6 +97,8 @@ class Bot:
 
         self.missing_turn_in_item_questid: list[int] = [] # this mean quest is unlocked (green quest)
         self.missing_quest_progress_questid: list[int] = [] # this mean quest is locked (red quest)
+
+        self.player_in_area: list[PlayerArea] = []
 
         self.bot_main = None
         self.command = Command(self, init_handler=True)
@@ -300,14 +303,16 @@ class Bot:
                 self.areaId = data["areaId"]
                 self.strMapName = data["strMapName"] #"yulgar"
                 self.monsters: list[Monster] = []
+                self.player_in_area: list[PlayerArea] = []
                 for i_uo_branch in uo_branch:
-                    if (i_uo_branch["uoName"] == self.player.USER.lower()):
+                    if (i_uo_branch["uoName"].lower() == self.player.USER.lower()):
                         self.player.PAD = i_uo_branch["strPad"]
                         self.player.CELL = i_uo_branch["strFrame"]
-                    if (i_uo_branch["uoName"] == self.follow_player.lower()):
+                    if (i_uo_branch["uoName"].lower() == self.follow_player.lower()):
                         self.followed_player_cell = i_uo_branch["strFrame"]
-                    if (i_uo_branch["uoName"] == self.player.USER):
+                    if (i_uo_branch["uoName"].lower() == self.player.USER.lower()):
                         self.player.setIsInCombat(i_uo_branch["intState"])
+                    self.player_in_area.append(PlayerArea(i_uo_branch))
                 if mon_def and mon_branch and mon_map:
                     for i_mon_branch in mon_branch:
                         self.monsters.append(Monster(i_mon_branch))
@@ -358,7 +363,20 @@ class Bot:
             elif cmd == "uotls":
                 if str(data['unm']) == str(self.player.USER):
                     self.player.MAX_HP = int(data['o'].get('intHPMax', self.player.MAX_HP))
+                    self.player.MANA = int(data['o'].get('intMP', self.player.MANA))
                     self.player.setIsInCombat(data["o"].get("intState"))
+                    if self.player.IS_IN_COMBAT == False:
+                        self.player.setLastTarget(None)
+                else:
+                    player_name: str = data['unm']
+                    player_found = False
+                    for player in self.player_in_area:
+                        if player_name.lower() == player.str_username.lower():
+                            player_found = True
+                            player.updateDataPlayer(data["o"])
+                            break
+                    if not player_found:
+                        self.player_in_area.append(PlayerArea(data["o"]))
                     
             elif cmd == "sAct":
                 self.player.SKILLS = data["actions"]["active"]
@@ -395,6 +413,7 @@ class Bot:
                     player = p.get(self.username)
                     if player:
                         self.player.CURRENT_HP = player.get("intHP", self.player.CURRENT_HP)
+                        self.player.MANA = player.get("intMP", self.player.MANA)
                         # self.player.IS_IN_COMBAT = int(player.get("intState", self.player.IS_IN_COMBAT)) == 2
                         self.player.setIsInCombat(player.get("intState"))
                         
@@ -464,7 +483,7 @@ class Bot:
                             else:
                                 self.debug(Fore.CYAN + f"[SARA] [{saraType.upper()}] to {saraTInf}" + Fore.WHITE)
                         elif saraCInf.startswith("m") and saraTInf == f"p:{self.username_id}":
-                            saraType = actionResult["type"]
+                            saraType = actionResult.get("type", "")
                             self.debug(Fore.CYAN + f"[SARA] [{saraType.upper()}] {actionResult['hp']} DMG to {saraTInf}" + Fore.WHITE)
             elif cmd == "seia":
                 self.player.SKILLS[5]["anim"] = data["o"]["anim"]
@@ -485,7 +504,7 @@ class Bot:
                 if int(data["userID"]) == self.player.LOGINUSERID:
                     print(Fore.RED + "DEATH" + Fore.WHITE)
                     self.player.ISDEAD = True
-                    self.do_wait(11000)
+                    # self.do_wait(11000)
                     if self.isScriptable:
                         self.run_death_hanlder_task()
             elif cmd == "getQuests":
@@ -519,14 +538,23 @@ class Bot:
                                     self.player.INVENTORY.append(bought)
                                 return
             elif cmd == "sellItem":
+                # {"t":"xt","b":{"r":-1,"o":{"iQtyNow":230,"cmd":"sellItem","intAmount":43750,"CharItemID":8.3779747E8,"bCoins":0,"iQty":7}}}
                 for item in self.player.INVENTORY:
                     if int(item.char_item_id) == int(data["CharItemID"]):
+                        self.player.GOLD += int(data["intAmount"])
+                        self.player.GOLDFARMED += int(data["intAmount"])
+                        debug_data_gold = {
+                            "gold_added": int(data["intAmount"]),
+                            "gold_now": self.player.GOLD,
+                            "gold_farmed": self.player.GOLDFARMED
+                        }
+                        print(Fore.YELLOW + str(debug_data_gold) + Fore.WHITE)
                         if data["iQtyNow"] == 0:
                             self.player.INVENTORY.remove(item)
-                            print(f"sold {item.item_name}. qty now: 0")
+                            print(f"sold {data['iQty']}x {item.item_name}. qty now: 0")
                         else:
                             item.qty = data["iQtyNow"]
-                            print(f"sold {item.item_name}. qty now: {item.qty}")
+                            print(f"sold {data['iQty']}x {item.item_name}. qty now: {item.qty}")
                         break
             elif cmd == "addGoldExp":
                 self.player.GOLD += data["intGold"]
@@ -568,7 +596,7 @@ class Bot:
                     if dropItem.char_item_id:
                         playerItem = self.player.get_item_inventory_by_id(itemId)
                         playerBankItem = self.player.get_item_bank_by_id(itemId)
-                        item_name = ""
+                        item_name = dropItem.item_name
                         if playerItem:
                             playerItem.qty = dropItem.qty_now
                             playerItem.char_item_id = dropItem.char_item_id
@@ -651,6 +679,8 @@ class Bot:
             elif cmd == "addFaction":
                 # {"t":"xt","b":{"r":-1,"o":{"cmd":"addFaction","faction":{"FactionID":"75","bitSuccess":"1","CharFactionID":"48707365","sName":"Yew Mountains","iRep":"0"}}}}
                 self.player.addFaction(Faction(data["faction"]))
+            elif cmd == "clearAuras":
+                self.player.removeAllAuras()
         elif self.is_valid_xml(msg):
             if ("<cross-domain-policy><allow-access-from domain='*'" in msg):
                 self.write_message(f"<msg t='sys'><body action='login' r='0'><login z='zone_master'><nick><![CDATA[SPIDER#0001~{self.player.USER}~3.012]]></nick><pword><![CDATA[{self.player.TOKEN}]]></pword></login></body></msg>")
@@ -690,20 +720,30 @@ class Bot:
                 if msg.split('%')[5].lower() == self.follow_player.lower():
                     self.followed_player_cell = None
                     await self.ensure_leave_from_combat(always=True)
+                for player in self.player_in_area[:]:
+                    if player.str_username.lower() == msg.split('%')[5].lower():
+                        self.player_in_area.remove(player)
+                        break
             elif "uotls" in msg:
                 username = msg.split('%')[4]
+                movement = msg.split('%')[5]
+                cell = None
+                pad = None
+                for m in movement.split(','):
+                    key, value = m.split(':')
+                    if key == "strFrame":
+                        cell = value
+                    elif key == "strPad":
+                        pad = value
                 if username == self.follow_player:
-                    movement = msg.split('%')[5]
-                    cell = None
-                    pad = None
-                    for m in movement.split(','):
-                        key, value = m.split(':')
-                        if key == "strFrame":
-                            cell = value
-                        elif key == "strPad":
-                            pad = value
                     if cell != self.player.CELL:
                         self.followed_player_cell = cell
+                for player in self.player_in_area[:]:
+                    if player.str_username.lower() == username.lower():
+                        player.str_frame = cell
+                        if pad != None:
+                            player.str_pad = pad
+                        break
                         # self.jump_cell(cell, pad)
             elif "respawnMon" in msg:
                 pass
@@ -878,6 +918,9 @@ class Bot:
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(final_target)}%wvz%")
+    
+    def use_skill_to_myself(self, skill):
+        self.write_message(f"%xt%zm%gar%1%0%a4>p:{self.username_id}%wvz%")
         
     def check_is_skill_safe(self, skill: int):
         conditions = {
@@ -1017,6 +1060,18 @@ class Bot:
         self.battle_analyzer: bool = False
         self.battle_analyzer_time_start: datetime = None
         self.battle_analyzer_total_damage: int = 0
+    
+    def get_player_in_area(self, player_name: str) -> PlayerArea:
+        for player in self.player_in_area:
+            if player_name.lower() == player.str_username.lower():
+                return player
+        return None
+
+    def is_player_hp_below(self, player_name: str, percent: float) -> bool:
+        player = self.get_player_in_area(player_name)
+        if player is None:
+            return False
+        return player.is_hp_below(percent)
 
 class CustomError(Exception):
     """Exception raised for custom error in the application."""

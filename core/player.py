@@ -38,12 +38,13 @@ class Player:
         self.ISDEAD = False
         self.MAX_HP = 9999
         self.CURRENT_HP = 9999
+        self.MANA = 100
         self.IS_IN_COMBAT: bool = False
         self.X: int = 0
         self.Y: int= 0
         self.AURAS: list[Aura] = []
         self.skills_ref: dict = {}
-        self.last_target_id: Monster = None
+        self.last_target: Monster = None
         self.is_member: bool = False
 
     def getInfo(self):
@@ -163,9 +164,9 @@ class Player:
                 return item
         return None
 
-    def get_item_inventory_by_enhance_id(self, enh_pattern_id: int):
+    def get_item_inventory_by_enhance_id(self, enh_id: int) -> ItemInventory:
         for item in self.INVENTORY:
-            if item.enh_pattern_id == enh_pattern_id:
+            if item.enh_id == enh_id:
                 return item
         return None
     
@@ -234,6 +235,9 @@ class Player:
             if aura.name == normalized_name:
                 self.AURAS.remove(aura)
                 break
+    
+    def removeAllAuras(self):
+        self.AURAS: list[Aura] = []
 
     def getAura(self, auraName: str) -> Aura:
         normalized_name = normalize(auraName)
@@ -250,10 +254,13 @@ class Player:
         return False
     
     def setLastTarget(self, monster: Monster):
-        self.last_target_id = monster
+        if monster == None:
+            self.last_target = None
+            return
+        self.last_target = monster
     
     def getLastTarget(self) -> Monster:
-        return self.last_target_id
+        return self.last_target
     
     def setIsInCombat(self, player_state: int):
         self.IS_IN_COMBAT = True if player_state == 2 else False
@@ -279,3 +286,7 @@ class Player:
             if fac.faction_name == normalized_faction:
                 return fac.get_rank()
         return 0
+    
+    def printAllAura(self):
+        for aur in self.AURAS:
+            print(aur.name)

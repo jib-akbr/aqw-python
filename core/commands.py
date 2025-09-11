@@ -18,17 +18,29 @@ def check_alive(func):
             return func(self, *args, **kwargs)
         start_time = time.time()
         timeout = 11  # Maximum time to wait (in seconds)
-
+        count = 1
         while self.isStillConnected():
             if self.isPlayerAlive():
-                break
+                return func(self, *args, **kwargs)
             if time.time() - start_time > timeout:
-                self.stopBot()
-                return
+                print("timeout from @check_alive sync")
+                self.bot.debug(Fore.MAGENTA + "respawned: from @check_alive sync" + Fore.WHITE)
+                self.bot.write_message(f"%xt%zm%resPlayerTimed%{self.bot.areaId}%{self.bot.user_id}%")
+                self.bot.jump_cell(self.bot.player.CELL, self.bot.player.PAD)
+                self.bot.player.ISDEAD = False
+                print("Spawned at cell:", self.bot.player.CELL, "pad:", self.bot.player.PAD)
+                # self.stopBot("from @check_alive sync")
+                return func(self, *args, **kwargs)
             time.sleep(1)  # Avoid busy-waiting
+            count += 1
         if not self.isStillConnected():
-            print("STOPPPPPPPP")
+            print("STOPPPPPPPP SYNC")
             return
+        self.bot.debug(Fore.MAGENTA + "respawned: from @check_alive sync" + Fore.WHITE)
+        self.bot.write_message(f"%xt%zm%resPlayerTimed%{self.bot.areaId}%{self.bot.user_id}%")
+        self.bot.jump_cell(self.bot.player.CELL, self.bot.player.PAD)
+        self.bot.player.ISDEAD = False
+        print("Spawned at cell:", self.bot.player.CELL, "pad:", self.bot.player.PAD)
         return func(self, *args, **kwargs)
 
     @wraps(func)
@@ -40,14 +52,25 @@ def check_alive(func):
 
         while self.isStillConnected():
             if self.isPlayerAlive():
-                break
+                return await func(self, *args, **kwargs)
             if time.time() - start_time > timeout:
-                self.stopBot()
-                return
+                print("timeout from @check_alive async")
+                self.bot.debug(Fore.MAGENTA + "respawned: from @check_alive sync" + Fore.WHITE)
+                self.bot.write_message(f"%xt%zm%resPlayerTimed%{self.bot.areaId}%{self.bot.user_id}%")
+                self.bot.jump_cell(self.bot.player.CELL, self.bot.player.PAD)
+                self.bot.player.ISDEAD = False
+                print("Spawned at cell:", self.bot.player.CELL, "pad:", self.bot.player.PAD)
+                # self.stopBot("from @check_alive async")
+                return await func(self, *args, **kwargs)
             await asyncio.sleep(1)  # Non-blocking wait
         if not self.isStillConnected():
-            print("STOPPPPPPPP")
+            print("STOPPPPPPPP ASYNC")
             return
+        self.bot.debug(Fore.MAGENTA + "respawned: from @check_alive async" + Fore.WHITE)
+        self.bot.write_message(f"%xt%zm%resPlayerTimed%{self.bot.areaId}%{self.bot.user_id}%")
+        self.bot.jump_cell(self.bot.player.CELL, self.bot.player.PAD)
+        self.bot.player.ISDEAD = False
+        print("Spawned at cell:", self.bot.player.CELL, "pad:", self.bot.player.PAD)
         return await func(self, *args, **kwargs)
     # Check if the function is async and use the appropriate wrapper
     return async_wrapper if iscoroutinefunction(func) else sync_wrapper
@@ -180,6 +203,12 @@ class Command:
                 self.bot.jump_cell(monster.frame, "Left")
                 await asyncio.sleep(1)
                 return
+            
+    @check_alive
+    async def wait_use_skill(self, index: int):
+        while not self.bot.player.canUseSkill(int(index)):
+            await self.sleep(100)
+        await self.use_skill(index)
         
     @check_alive
     async def use_skill(self,  index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0) -> None:
@@ -208,39 +237,50 @@ class Command:
                     else:
                         target_names.append(target_monster.lower())
 
-                # Mapping priority_monsters_id
-                for mon in self.bot.monsters:
-                    if mon.frame != self.bot.player.CELL or not mon.is_alive:
-                        continue
+                # Step 1: build a map of alive monsters in current cell
+                alive_monsters = {mon.mon_map_id: mon for mon in self.bot.monsters if mon.frame == self.bot.player.CELL and mon.is_alive}
 
-                    # Check by ID
-                    if mon.mon_map_id in target_ids:
-                        priority_monsters_id.append(mon.mon_map_id)
-                        continue
+                priority_monsters_id = []
 
-                    # Check by name
-                    if mon.mon_name.lower() in target_names:
-                        priority_monsters_id.append(mon.mon_map_id)
-                # Check if the first index is one of the priority targets
-                if len(priority_monsters_id) > 0:
-                    if not cell_monsters_id[0] in priority_monsters_id:
-                        cell_monsters_id.pop(0)
-                        cell_monsters_id.insert(0, priority_monsters_id[0])
-                # Remove duplicate monster id and keep the order
+                # Step 2: follow *input* order strictly
+                for target in target_monsters.split(','):
+                    if target.startswith("id."):
+                        mon_id = target.split(".")[1]
+                        if mon_id in alive_monsters:
+                            priority_monsters_id.append(mon_id)
+                    else:
+                        name = target.lower()
+                        for mon in self.bot.monsters:
+                            if mon.frame == self.bot.player.CELL and mon.is_alive and mon.mon_name.lower() == name:
+                                priority_monsters_id.append(mon.mon_map_id)
+
+                # Step 3: merge into cell_monsters_id (dedup, keep priority first)
+                final_ids = []
                 seen = set()
-                for monster_id in cell_monsters_id:
-                    if monster_id not in seen:
-                        final_ids.append(monster_id)
-                        seen.add(monster_id)
+
+                # First: priority in order
+                for mon_id in priority_monsters_id:
+                    if mon_id not in seen:
+                        final_ids.append(mon_id)
+                        seen.add(mon_id)
+
+                # Then: the rest
+                for mon_id in cell_monsters_id:
+                    if mon_id not in seen:
+                        final_ids.append(mon_id)
+                        seen.add(mon_id)
+
             else:
                 cell_monsters.sort(key=lambda m: m.current_hp)
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
             if index == 5:
                 self.bot.use_scroll(final_ids, max_target)
-            if len(final_ids) > 0:
+            if index < 5 and len(final_ids) > 0:
                 self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
+        elif skill["tgt"] == "s":
+            self.bot.use_skill_to_myself(index)
         # self.bot.canuseskill = False
         # self.bot.player.delayAllSkills(except_skill=index, delay_ms=1200)
 
@@ -304,13 +344,6 @@ class Command:
             await asyncio.sleep(1)
             self.bot.index -= 1
             
-    async def sell_item(self, item_name: str, qty: int = 1):
-        for item in self.bot.player.INVENTORY:
-            if item.item_name.lower() == self.item_name.lower():
-                packet = f"%xt%zm%sellItem%{self.bot.areaId}%{item.item_id}%{self.qty}%{item.char_item_id}%"
-                self.bot.write_message(packet)
-                asyncio.sleep(0.5)
-                break
 
     def is_in_bank(self, itemName: str, itemQty: int = 1, operator: str = ">=") -> bool:
         inBank = self.bot.player.isInBank(itemName, itemQty, operator)
@@ -411,6 +444,7 @@ class Command:
         s_type = None
         for item in self.bot.player.INVENTORY:
             if normalize(item.item_name.lower()) == normalize(item_name.lower()):
+                print(f"equipping {item_name}")
                 packet = f"%xt%zm%equipItem%{self.bot.areaId}%{item.item_id}%"
                 self.bot.write_message(packet)
                 is_equipped = True
@@ -436,9 +470,9 @@ class Command:
                 break
     
     @check_alive
-    async def equip_item_by_enhancement(self, enh_pattern_id: int):
+    async def equip_item_by_enhancement(self, enh_id: int):
         # TODO: should change the enhance_pattern_id to enhance name
-        item = self.bot.player.get_item_inventory_by_enhance_id(enh_pattern_id)
+        item: ItemInventory = self.bot.player.get_item_inventory_by_enhance_id(enh_id)
         if item:
             await self.equip_item(item.item_name)
 
@@ -463,6 +497,8 @@ class Command:
     
     @check_alive
     def get_monster_hp(self, monster: str) -> int:
+        if monster == None:
+            return -1
         if monster.startswith('id.'):
             monster = monster.split('.')[1]
         for mon in self.bot.monsters:
@@ -516,6 +552,18 @@ class Command:
 
     def wait_count_player(self, player_count: int):
         return len(self.bot.user_ids) >= player_count
+    
+    def wait_count_player_in_cell(self, cell: str, player_count: int):
+        count = 0
+        cell = cell.lower()
+        for player in self.bot.player_in_area:
+            print(player.str_username, player.str_frame, cell)
+            if player.str_frame.lower() == cell:
+                count += 1
+        
+        if self.bot.player.CELL.lower() == cell:
+            count += 1
+        return count >= player_count
     
     def get_player_cell(self) -> str:
         return self.bot.player.getPlayerCell()[0]
@@ -574,12 +622,13 @@ class Command:
         return equipped_class if equipped_class else None
     
     @check_alive
-    async def sell_item(self, item_name: str):
+    async def sell_item(self, item_name: str, qty: int = 1):
         # %xt%zm%sellItem%374121%87406%1%950679343%
         item: ItemInventory = self.bot.player.get_item_inventory(item_name)
         if item:
-            self.bot.write_message(f"%xt%zm%sellItem%{self.bot.areaId}%{item.item_id}%1%{item.char_item_id}%")
-            await self.sleep(1000)
+            self.bot.debug(f"Selling {qty}x {item_name}...")
+            self.bot.write_message(f"%xt%zm%sellItem%{self.bot.areaId}%{item.item_id}%{qty}%{item.char_item_id}%")
+            await self.sleep(500)
 
     @check_alive
     async def buy_item(self, shop_id: int, item_name: str, qty: int = 1):

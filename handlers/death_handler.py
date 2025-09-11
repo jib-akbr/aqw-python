@@ -3,7 +3,11 @@ from colorama import Fore
 
 async def death_handler_task(bot: 'Bot'):
     print("Running death handler...")
-    await asyncio.sleep(11)
+    count = 1
+    for i in range(11):
+        await asyncio.sleep(1)
+        print(f"death handler {count}")
+        count += 1
     bot.debug(Fore.MAGENTA + "respawned" + Fore.WHITE)
     bot.write_message(f"%xt%zm%resPlayerTimed%{bot.areaId}%{bot.user_id}%")
     bot.jump_cell(bot.player.CELL, bot.player.PAD)
