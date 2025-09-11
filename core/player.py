@@ -37,6 +37,7 @@ class Player:
         self.EXPFARMED = 0
         self.ISDEAD = False
         self.MAX_HP = 9999
+        self.MAX_MP = 100
         self.CURRENT_HP = 9999
         self.MANA = 100
         self.IS_IN_COMBAT: bool = False
