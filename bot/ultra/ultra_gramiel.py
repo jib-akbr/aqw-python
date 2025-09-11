@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # SETUP MANUALLY
 # LC (Valiance, Wizard Class, Forge Helm, Penitence, 51% Dmg)
-# LOO (Arcana's Concerto, Healer Class, Healer Helm, Absolution, 51% Dmg)
+# LOO (Arcana's Concerto, Luck Class, Healer Helm, Absolution, 51% Dmg)
 # PCM (Luck Mana Vamp, Healer Class, Lucky Helm, Penitence, 51% Dmg)
 # SC (Valiance, Wizard Class, Wizard Helm, Penitence, 51% Dmg)
 
@@ -110,7 +110,7 @@ async def main(cmd: Command):
     seconds = int(elapsed_time % 60)
 
     print(f"Elapsed time: {minutes} minutes, {seconds} seconds")
-    await cmd.ensure_turn_in_quest(10301)
+    await cmd.turn_in_quest(10301)
     while cmd.is_not_in_map("whitemap"):
         await cmd.join_map("whitemap", private_room_number)
         await cmd.sleep(1000)

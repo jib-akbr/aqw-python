@@ -6,6 +6,9 @@ from colorama import Fore
 import json
 from core.utils import normalize
 from model.inventory import ItemInventory, ItemType
+from model.aura import Aura
+from model.faction import Faction
+from model.monster import Monster
 
 class Player:    
     # Player intState
@@ -27,7 +30,7 @@ class Player:
         self.INVENTORY: List[ItemInventory] = []
         self.TEMPINVENTORY: List[ItemInventory] = []
         self.BANK: List[ItemInventory] = []
-        self.FACTIONS = []
+        self.FACTIONS: list[Faction] = []
         self.CHARID = 0
         self.GOLD = 0
         self.GOLDFARMED = 0
@@ -36,12 +39,14 @@ class Player:
         self.MAX_HP = 9999
         self.MAX_MP = 100
         self.CURRENT_HP = 9999
-        self.CURRENT_MP = 100
-        self.IS_IN_COMBAT = False
+        self.MANA = 100
+        self.IS_IN_COMBAT: bool = False
         self.X: int = 0
         self.Y: int= 0
-        self.AURAS = []
+        self.AURAS: list[Aura] = []
         self.skills_ref: dict = {}
+        self.last_target: Monster = None
+        self.is_member: bool = False
 
     def getInfo(self):
         url = "https://game.aq.com/game/api/login/now?"
@@ -60,6 +65,7 @@ class Player:
             self.SERVERS = response_json["servers"]
             self.TOKEN = response_json["login"]["sToken"]
             self.LOGINUSERID = response_json["login"]["userid"]
+            self.is_member = response_json["login"]["iUpg"] == 1
             return response
         if response_json.get("bSuccess", 0) == 0:
             print(f"Login {self.USER} failed... {Fore.RED + response_json['sMsg'] + Fore.RESET}")
@@ -159,9 +165,9 @@ class Player:
                 return item
         return None
 
-    def get_item_inventory_by_enhance_id(self, enh_pattern_id: int):
+    def get_item_inventory_by_enhance_id(self, enh_id: int) -> ItemInventory:
         for item in self.INVENTORY:
-            if item.enh_pattern_id == enh_pattern_id:
+            if item.enh_id == enh_id:
                 return item
         return None
     
@@ -198,7 +204,7 @@ class Player:
         if isTemp:
             inv = self.TEMPINVENTORY
         for item in inv:
-            if item.item_name == normalize(itemName):
+            if normalize(item.item_name) == normalize(itemName):
                 invItemQty = item.qty
                 break
         return [checkOperator(invItemQty, qty, operator), invItemQty]
@@ -214,36 +220,74 @@ class Player:
         return [self.CELL, self.PAD]
 
     def addAura(self, auras:list):
-        timestamp = datetime.now()
         for aura in auras:
-            duration = aura.get('dur', 0)
-            expiration_time = timestamp + timedelta(seconds=duration)
-            aura_details ={
-                'name': aura.get('nam'),
-                'type': aura.get('t'),
-                'duration': duration,
-                'source_spell': aura.get('spellOn', None),
-                'icon': aura.get('icon'),
-                'applied_time': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                'expires_at': expiration_time.strftime('%Y-%m-%d %H:%M:%S'),
-            }
             is_new = aura.get('isNew', False)
+            name = normalize(aura.get('nam'))
             if is_new:
-                self.AURAS.append(aura_details)
+                self.AURAS.append(Aura(aura))
             else:
                 for existing_aura in self.AURAS:
-                    if existing_aura['name'] == aura_details['name']:
-                        existing_aura['applied_time'] = aura_details['applied_time']
-                        existing_aura['expires_at'] = aura_details['expires_at']
-                        break
-            # print(f"{is_new} Aura: {aura_details['name']}, Type: {aura_details['type']}, Duration: {aura_details['duration']} seconds, "
-            #     f"Source Spell: {aura_details['source_spell']}, Icon: {aura_details['icon']}, "
-            #     f"Applied: {aura_details['applied_time']}, Expires: {aura_details['expires_at']}")
-            # print()
+                    if existing_aura.name == name:
+                        existing_aura.refresh(aura.get('dur', 0))
     
     def removeAura(self, auraName: str):
+        normalized_name = normalize(auraName)
         for aura in self.AURAS[:]:
-            if aura['name'] == auraName:
+            if aura.name == normalized_name:
                 self.AURAS.remove(aura)
-                # print(f"aura removed: {auraName}")
                 break
+    
+    def removeAllAuras(self):
+        self.AURAS: list[Aura] = []
+
+    def getAura(self, auraName: str) -> Aura:
+        normalized_name = normalize(auraName)
+        for aura in self.AURAS:
+            if aura.name == normalized_name and not aura.is_expired():
+                return aura
+        return None
+    
+    def hasAura(self, auraName: str) -> bool:
+        normalized_name = normalize(auraName)
+        for aura in self.AURAS:
+            if aura.name == normalized_name and not aura.is_expired():
+                return True
+        return False
+    
+    def setLastTarget(self, monster: Monster):
+        if monster == None:
+            self.last_target = None
+            return
+        self.last_target = monster
+    
+    def getLastTarget(self) -> Monster:
+        return self.last_target
+    
+    def setIsInCombat(self, player_state: int):
+        self.IS_IN_COMBAT = True if player_state == 2 else False
+    
+    def addFaction(self, faction: Faction) -> None:
+        already_exists = False
+        for fac in self.FACTIONS:
+            if fac.faction_name.lower() == faction.faction_name.lower():
+                already_exists = True
+                return
+        if already_exists == False:
+            self.FACTIONS.append(faction)
+    
+    def addRepToFaction(self, faction_id: int, faction_rep: int) -> None:
+        for fac in self.FACTIONS:
+            if fac.faction_id == faction_id:
+                fac.add_rep(faction_rep)
+                return
+    
+    def getFactionRank(self, faction_name: str) -> int:
+        normalized_faction = normalize(faction_name)
+        for fac in self.FACTIONS:
+            if fac.faction_name == normalized_faction:
+                return fac.get_rank()
+        return 0
+    
+    def printAllAura(self):
+        for aur in self.AURAS:
+            print(aur.name)
