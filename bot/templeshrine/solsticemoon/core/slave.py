@@ -8,7 +8,7 @@ from colorama import Fore
 # SLAVE MAID
 async def main(cmd: Command):
     def print_debug(message):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.WHITE}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.RESET}")
     
     async def go_to_master():
         if cmd.bot.follow_player and cmd.bot.followed_player_cell != cmd.bot.player.CELL:
@@ -36,6 +36,7 @@ async def main(cmd: Command):
     pid = await invitation_queue.get()
     print_debug(f"Accepting party invitation from PID: {pid}")
     await cmd.send_packet(f"%xt%zm%gp%1%pa%{pid}%")
+    await cmd.sleep(1000)
 
     skill_list = [0,1,2,0,3,4]
     skill_index = 0

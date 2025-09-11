@@ -832,7 +832,6 @@ class Bot:
             return
         # print("SSS", skill, monsters_id, max_target)
         self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
@@ -840,7 +839,6 @@ class Bot:
         if not self.check_is_skill_safe(skill):
             return
         self.target = [f"a{skill}>p:{i}" for i in self.user_ids][:max_target]
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
         

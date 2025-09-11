@@ -15,13 +15,15 @@ async def main(cmd: Command):
     global do_taunt, timeleapse, log_taunt
     
     def print_debug(message):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.WHITE}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.RESET}")
         
     async def enter_dungeon():
         global timeleapse
         timeleapse = time.monotonic() 
         await cmd.send_packet("%xt%zm%dungeonQueue%25127%midnightsun%")
-        await cmd.sleep(2000)
+        while cmd.is_not_in_map("midnightsun"):
+            print_debug("Waiting for dungeon queue...")
+            await cmd.sleep(200)
         
     async def to_next_cell():
         global timeleapse, cleared_count
@@ -42,7 +44,6 @@ async def main(cmd: Command):
             print_debug(f"Total time taken: {minutes} minutes and {seconds} seconds.")
             print_debug(f"Entering new queue...")
             await enter_dungeon()
-            await cmd.sleep(4000)
         
     def msg_taunt_handler(message):
         global do_taunt, log_taunt
@@ -92,11 +93,6 @@ async def main(cmd: Command):
     # Wait for all slaves to join the party, then enter the dungeon
     await cmd.sleep(4000)
     await enter_dungeon()
-    
-    # Waiting for the dungeon queue
-    while cmd.is_not_in_map("midnightsun"):
-        print_debug("Waiting for dungeon queue...")
-        await cmd.sleep(200)
 
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
