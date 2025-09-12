@@ -21,7 +21,7 @@ b = Bot(
         "Ecliptic Offering",
     ], 
     showLog=True, 
-    showDebug=True,
+    showDebug=False,
     showChat=True,
     isScriptable=True,
     followPlayer=config.slaves[0].username.lower(),

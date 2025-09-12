@@ -1,7 +1,7 @@
 @echo off
 title Temple Shrine Dungeon
 
-set PROJECT_PATH="D:\Python\aqw-python"
+set PROJECT_PATH="D:\aqw-python"
 set BOT_PATH=bot.templeshrine.ascendeclipse.bot_temple
 set USER_NAME=u
 set PASSWORD=p
@@ -9,7 +9,7 @@ set PASSWORD=p
 echo Starting Temple Shrine Dungeon bots in a 2x2 grid...
 
 REM 1. Buka window dengan panel pertama (akan menjadi kiri atas)
-wt --title "1L solstice_p1" cmd /k "cd /d %PROJECT_PATH% && echo 1 | py -m %BOT_PATH%"
+wt --title "1L solstice_p1" --suppressApplicationTitle cmd /k "cd /d %PROJECT_PATH% && echo 1 | py -m %BOT_PATH%"
 
 echo Waiting (3 secs) for lead account to be ready...
 timeout /t 3 /nobreak >nul

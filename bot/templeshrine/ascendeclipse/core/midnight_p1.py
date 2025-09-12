@@ -4,30 +4,34 @@ from datetime import datetime
 from core.utils import is_valid_json
 from core.commands import Command
 from colorama import Fore
+from .core_temple import *
 
 target_monsters = "Ascended Midnight"
 stop_attack = False
 do_taunt = True
 log_taunt = False
 converges_count = 0
+cleared_count = 0
 
 # SLAVE MAID
 async def main(cmd: Command):
     global target_monsters, stop_attack, do_taunt, log_taunt, converges_count
     
-    def print_debug(message):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.RESET}")
-    
     async def go_to_master():
-        global do_taunt, stop_attack, converges_count
+        global do_taunt, stop_attack, converges_count, cleared_count
         converges_count = 0 # reset converges count
         do_taunt = False # reset taunt
         stop_attack = False # reset stop attack
         
         if cmd.bot.follow_player:
+            print_debug(f"[{cmd.bot.player.CELL}] Going to master's place...")
             cmd.bot.jump_cell(cmd.bot.player.CELL, cmd.bot.player.PAD)
             await cmd.bot.ensure_leave_from_combat()
             await cmd.bot.goto_player(cmd.bot.follow_player)
+            await cmd.sleep(500)
+            if cmd.bot.player.CELL == "r4":
+                cleared_count += 1
+                print_debug(f"Dungeon cleared {cleared_count} times.", Fore.MAGENTA)
             
     def msg_taunt_handler(message):
         global target_monsters, stop_attack, do_taunt, log_taunt, converges_count
@@ -90,10 +94,7 @@ async def main(cmd: Command):
     is_attacking = False
     
     while cmd.isStillConnected():
-        if cmd.bot.followed_player_cell != cmd.bot.player.CELL:
-            print_debug(f"[{cmd.bot.player.CELL}] Going to master's place...")
-            await go_to_master()
-            await cmd.sleep(500)
+        await go_to_master()
             
         while cmd.is_monster_alive():
             target_monsters = "Ascended Midnight"

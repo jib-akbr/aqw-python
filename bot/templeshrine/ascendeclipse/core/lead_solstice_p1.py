@@ -1,37 +1,10 @@
-import asyncio
 import time
 import json
 from datetime import datetime
 from core.commands import Command
 from core.utils import is_valid_json
-import colorama
 from colorama import Fore
-from collections import deque
-
-# ==========================================================
-# BAGIAN GLOBAL: Didefinisikan di luar fungsi manapun
-# ==========================================================
-colorama.init()
-
-MOVE_UP = "\033[F"
-ERASE_LINE = "\033[K"
-logs = deque(maxlen=5)
-
-LOG_LOCK = asyncio.Lock()
-
-async def add_log(message: str):
-    """
-    Fungsi logging yang aman untuk digunakan dengan asyncio.
-    """
-    # 3. Gunakan 'async with' untuk memastikan hanya satu task
-    #    yang bisa menjalankan blok ini pada satu waktu.
-    async with LOG_LOCK:
-        if logs:
-            print(MOVE_UP * (len(logs)), end="")
-            print(ERASE_LINE * (len(logs) + 1), end="")
-        
-        logs.append(message)
-        print("\n".join(logs))
+from .core_temple import *
     
 target_monsters = "Ascended Solstice,Blessless Deer,Suffocated Light"
 stop_attack = False
@@ -45,9 +18,6 @@ light_gather_count = 0
 # PARTY LEADER
 async def main(cmd: Command):
     global target_monsters, stop_attack, do_taunt, timeleapse, log_taunt, cleared_count, converges_count, light_gather_count
-    
-    def print_debug(message):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.RESET}")
         
     async def enter_dungeon():
         global timeleapse
@@ -74,6 +44,8 @@ async def main(cmd: Command):
         elif cmd.bot.player.CELL == "r2":
             await cmd.jump_cell("r3", "Left")
         elif cmd.bot.player.CELL == "r3":
+            await cmd.jump_cell("r4", "Left")
+        elif cmd.bot.player.CELL == "r4":
             elapsed_seconds = time.monotonic() - timeleapse
             minutes = int(elapsed_seconds // 60)
             seconds = int(elapsed_seconds % 60)
@@ -156,9 +128,12 @@ async def main(cmd: Command):
     while cmd.isStillConnected():
         print_debug("Idle...")
             
-        while cmd.is_monster_alive():                                
-            stop_attack = cmd.bot.player.hasAura("Sun's Heat")
+        while cmd.is_monster_alive():    
+            target_monsters = "Ascended Solstice,Blessless Deer,Suffocated Light"
             
+            if cmd.bot.player.hasAura("Sun's Heat"):
+                target_monsters = "Moon Haze"
+
             if not is_attacking:
                 print_debug(f"[{cmd.bot.player.CELL}] Attacking monsters...")
                 is_attacking = True

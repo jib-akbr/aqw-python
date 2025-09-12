@@ -335,7 +335,6 @@ class Bot:
                         self.player.PAD = i_uo_branch["strPad"]
                         self.player.CELL = i_uo_branch["strFrame"]
                     if (i_uo_branch["uoName"].lower() == self.follow_player.lower()):
-                        print(f"followed_player_cell: {i_uo_branch['strFrame']}")
                         self.followed_player_cell = i_uo_branch["strFrame"]
                     if (i_uo_branch["uoName"].lower() == self.player.USER.lower()):
                         self.player.setIsInCombat(i_uo_branch["intState"])
