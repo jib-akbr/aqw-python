@@ -5,7 +5,7 @@ from core.utils import is_valid_json
 from core.commands import Command
 from colorama import Fore
 
-target_monsters = "Ascended Solstice"
+target_monsters = "Ascended Solstice,Blessless Deer"
 stop_attack = False
 do_taunt = False
 log_taunt = False
@@ -19,9 +19,15 @@ async def main(cmd: Command):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.RESET}")
     
     async def go_to_master():
-        if cmd.bot.follow_player and cmd.bot.followed_player_cell != cmd.bot.player.CELL:
+        global do_taunt, stop_attack, converges_count
+        converges_count = 0 # reset converges count
+        do_taunt = False # reset taunt
+        stop_attack = False # reset stop attack
+        
+        if cmd.bot.follow_player:
+            cmd.bot.jump_cell(cmd.bot.player.CELL, cmd.bot.player.PAD)
+            await cmd.bot.ensure_leave_from_combat()
             await cmd.bot.goto_player(cmd.bot.follow_player)
-            await cmd.sleep(1000)
             
     def msg_taunt_handler(message):
         global target_monsters, stop_attack, do_taunt, log_taunt, converges_count
@@ -31,20 +37,6 @@ async def main(cmd: Command):
             try:
                 data = data["b"]["o"]
                 cmd = data["cmd"]
-                a = data.get("a") # Auras
-                if a:
-                    for auras in a:
-                        cInf = auras.get("cInf")
-                        if auras.get("auras"):
-                            for aura in auras.get("auras"):
-                                if aura.get("nam") == "Sun's Heat":
-                                    if aura.get("isNew") == True:
-                                        stop_attack = True
-                        if auras.get("aura"):
-                            aura = auras.get("aura")
-                            if aura.get("nam") == "Sun's Heat":
-                                if auras.get("cmd") == "aura-":
-                                    stop_attack = False
                 if cmd == "ct":
                     anims = data.get("anims") # Animations
                     m = data.get("m") # Monster conditions
@@ -53,17 +45,16 @@ async def main(cmd: Command):
                         for anim in anims:
                             msg = anim.get("msg")
                             if msg:
-                                if log_taunt:
-                                    print_debug(f"Received message: {msg}")
                                 if  "sun converges" in msg.lower():
                                     converges_count += 1
                                     if converges_count % 2 == 0:
                                         do_taunt = True
                     if m:
                         for mon_map_id, mon_condition in m.items():
-                            is_alive = int(mon_condition.get("intHP")) > 0
+                            monHp = int(mon_condition.get('intHP'))
+                            is_alive = monHp > 0
                             if (is_alive == False):
-                                print(f"Monster id:{mon_map_id} is dead.")
+                                print_debug(f"Monster id:{mon_map_id} is dead.")
             except:
                 return
     cmd.bot.subscribe(msg_taunt_handler)
@@ -84,7 +75,9 @@ async def main(cmd: Command):
     await cmd.equip_item(cmd.getFarmClass())
     await cmd.equip_scroll("Scroll of Enrage")
     
-    await go_to_master()
+    while (cmd.bot.strMapName != "yulgar"):
+        await go_to_master()
+        await cmd.sleep(1000)
     
     print_debug("Waiting party invitation...")
     pid = await invitation_queue.get()
@@ -97,12 +90,26 @@ async def main(cmd: Command):
     is_attacking = False
     
     while cmd.isStillConnected():
-        print_debug("Going to master's place...")
-        await go_to_master()
-        await cmd.sleep(1000)
+        if cmd.bot.followed_player_cell != cmd.bot.player.CELL:
+            print_debug(f"[{cmd.bot.player.CELL}] Going to master's place...")
+            await go_to_master()
+            await cmd.sleep(500)
+            
         while cmd.is_monster_alive():
-            while stop_attack:
+            target_monsters = "Ascended Solstice"
+            stop_attack = cmd.bot.player.hasAura("Sun's Heat")
+            
+            while cmd.bot.player.ISDEAD:
+                print_debug(f"[{cmd.bot.player.CELL}] player death...")
+                is_attacking = False
                 await cmd.sleep(500)
+                
+            if cmd.bot.player.hasAura("Sun's Heat"):
+                target_monsters = "Moon Haze"
+                
+            if cmd.bot.player.hasAura("Solar Flare"):
+                target_monsters = "Blessless Deer"
+            
             if not is_attacking:
                 print_debug(f"[{cmd.bot.player.CELL}] Attacking monsters...")
                 is_attacking = True
@@ -114,9 +121,9 @@ async def main(cmd: Command):
                 await cmd.sleep(1000)
                 do_taunt = False
             else:
-                await cmd.use_skill(skill_list[skill_index], target_monsters)
+                await cmd.use_skill(skill_list[skill_index], target_monsters, buff_only=stop_attack)
                 skill_index += 1
                 if skill_index >= len(skill_list):
-                    skill_index = 0
+                    skill_index = 0 
             await cmd.sleep(100)
         is_attacking = False

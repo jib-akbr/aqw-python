@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from collections import deque
 from datetime import datetime, timedelta
 from colorama import Fore, Back, Style, init
+import colorama
 import threading
 import inspect
 import asyncio
@@ -23,6 +24,28 @@ import time
 import traceback
 init(autoreset=True, convert=True)
 
+# ==========================================================
+# BAGIAN GLOBAL: Didefinisikan di luar fungsi manapun
+# ==========================================================
+colorama.init()
+
+MOVE_UP = "\033[F"
+ERASE_LINE = "\033[K"
+logs = deque(maxlen=5)
+
+def add_log(message: str):
+    """
+    Fungsi ini ada di scope GLOBAL.
+    Fungsi ini bertindak sebagai "alat" logging serbaguna.
+    """
+    if logs:
+        print(MOVE_UP * (len(logs)), end="")
+        print(ERASE_LINE * (len(logs) + 1), end="")
+    
+    logs.append(f"{datetime.now().strftime('%H:%M:%S')} - {message}")
+    print("\n".join(logs))
+    
+    
 class Bot:
 
     def __init__(
@@ -312,6 +335,7 @@ class Bot:
                         self.player.PAD = i_uo_branch["strPad"]
                         self.player.CELL = i_uo_branch["strFrame"]
                     if (i_uo_branch["uoName"].lower() == self.follow_player.lower()):
+                        print(f"followed_player_cell: {i_uo_branch['strFrame']}")
                         self.followed_player_cell = i_uo_branch["strFrame"]
                     if (i_uo_branch["uoName"].lower() == self.player.USER.lower()):
                         self.player.setIsInCombat(i_uo_branch["intState"])
@@ -506,7 +530,6 @@ class Bot:
                 if int(data["userID"]) == self.player.LOGINUSERID:
                     print(Fore.RED + "DEATH" + Fore.WHITE)
                     self.player.ISDEAD = True
-                    # self.do_wait(11000)
                     if self.isScriptable:
                         self.run_death_hanlder_task()
             elif cmd == "getQuests":
@@ -712,7 +735,7 @@ class Bot:
             elif "warning" in msg:
                 msg = msg.split('%')
                 text = msg[4]
-                print(Fore.RED + f"server warning: {text}" + Fore.WHITE)
+                print(Fore.RED + f"[{datetime.now().strftime('%H:%M:%S')}] server warning: {text}" + Fore.WHITE)
                 if "spamming the server" in text:
                     if self.auto_adjust_skill_delay:
                         self.skill_delay_ms += self.adjust_skill_delay_by_ms
@@ -869,7 +892,11 @@ class Bot:
             return False
     
     async def goto_player(self, player_name):
-        self.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
+        player_found = next((p for p in self.player_in_area if p.str_username.lower() == player_name.lower()), None)
+        if player_found:
+            self.jump_cell(player_found.str_frame, player_found.str_pad)
+        else:
+            self.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
         
     def get_drop(self, user_id, item_id):
         packet = f"%xt%zm%getDrop%{user_id}%{item_id}%"
@@ -904,7 +931,7 @@ class Bot:
                 self.player.setLastTarget(mon)
                 break
         self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
+        # add_log(f"tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
     def use_skill_to_player(self, skill, max_target):
@@ -916,8 +943,7 @@ class Bot:
         for tgt in self.target:
             if tgt not in final_target:
                 final_target.append(tgt)
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: %xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
+        # add_log(f"tgt_p: {','.join(self.target)}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(final_target)}%wvz%")
     
     def use_skill_to_myself(self, skill):
@@ -940,11 +966,11 @@ class Bot:
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "archpaladin": {
-                "hp_threshold": 40,
-                "skills_to_check": [3],
-                "condition": lambda hp, threshold: hp > threshold
-            },
+            # "archpaladin": {
+            #     "hp_threshold": 40,
+            #     "skills_to_check": [3],
+            #     "condition": lambda hp, threshold: hp > threshold
+            # },
         }
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)

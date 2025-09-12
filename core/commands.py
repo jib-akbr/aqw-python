@@ -211,7 +211,12 @@ class Command:
         await self.use_skill(index)
         
     @check_alive
-    async def use_skill(self,  index: int = 0, target_monsters: str = "*", hunt: bool = False, scroll_id: int = 0) -> None:
+    async def use_skill(self,  
+                        index: int = 0, 
+                        target_monsters: str = "*", 
+                        hunt: bool = False, 
+                        buff_only: bool = False
+                        ) -> None:
         if not self.bot.player.canUseSkill(int(index)) or not self.bot.check_is_skill_safe(int(index)):
             return
 
@@ -275,7 +280,7 @@ class Command:
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
             if index == 5:
                 self.bot.use_scroll(final_ids, max_target)
-            if index < 5 and len(final_ids) > 0:
+            if index < 5 and len(final_ids) > 0 and not buff_only:
                 self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)

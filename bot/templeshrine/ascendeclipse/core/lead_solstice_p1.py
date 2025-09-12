@@ -1,21 +1,50 @@
+import asyncio
 import time
 import json
 from datetime import datetime
 from core.commands import Command
 from core.utils import is_valid_json
+import colorama
 from colorama import Fore
+from collections import deque
 
+# ==========================================================
+# BAGIAN GLOBAL: Didefinisikan di luar fungsi manapun
+# ==========================================================
+colorama.init()
+
+MOVE_UP = "\033[F"
+ERASE_LINE = "\033[K"
+logs = deque(maxlen=5)
+
+LOG_LOCK = asyncio.Lock()
+
+async def add_log(message: str):
+    """
+    Fungsi logging yang aman untuk digunakan dengan asyncio.
+    """
+    # 3. Gunakan 'async with' untuk memastikan hanya satu task
+    #    yang bisa menjalankan blok ini pada satu waktu.
+    async with LOG_LOCK:
+        if logs:
+            print(MOVE_UP * (len(logs)), end="")
+            print(ERASE_LINE * (len(logs) + 1), end="")
+        
+        logs.append(message)
+        print("\n".join(logs))
+    
 target_monsters = "Ascended Solstice,Blessless Deer,Suffocated Light"
 stop_attack = False
 do_taunt = False
 timeleapse = 0
-log_taunt = False
+log_taunt = True
 cleared_count = 0
 converges_count = 0
+light_gather_count = 0
 
 # PARTY LEADER
 async def main(cmd: Command):
-    global target_monsters, stop_attack, do_taunt, timeleapse, log_taunt, cleared_count, converges_count
+    global target_monsters, stop_attack, do_taunt, timeleapse, log_taunt, cleared_count, converges_count, light_gather_count
     
     def print_debug(message):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {Fore.YELLOW}{message}{Fore.RESET}")
@@ -26,12 +55,16 @@ async def main(cmd: Command):
         await cmd.send_packet("%xt%zm%dungeonQueue%25127%ascendeclipse%")
         while cmd.is_not_in_map("ascendeclipse"):
             print_debug("Waiting for dungeon queue...")
-            await cmd.sleep(200)
+            await cmd.sleep(500)
         
     async def to_next_cell():
-        global stop_attack, timeleapse, cleared_count, converges_count
+        global do_taunt, stop_attack, timeleapse, cleared_count, converges_count, light_gather_count
+        do_taunt = False # reset taunt
         stop_attack = False # reset stop attack
         converges_count = 0 # reset converges count
+        light_gather_count = 0 # reset light gather count
+        deerHp = 100 # in percentage
+        
         print_debug(f"Moving to next cell...")
         await cmd.sleep(2000)
         if cmd.bot.player.CELL == "Enter":
@@ -51,7 +84,7 @@ async def main(cmd: Command):
             await enter_dungeon()
         
     def msg_taunt_handler(message):
-        global target_monsters, stop_attack, do_taunt, log_taunt, converges_count
+        global stop_attack, do_taunt, log_taunt, converges_count, light_gather_count
         if message:
             if is_valid_json(message):
                 data = json.loads(message)
@@ -65,46 +98,33 @@ async def main(cmd: Command):
                     a = data.get("a") # Auras
                     if a:
                         for auras in a:
-                            cInf = auras.get("tInf")
                             if auras.get("auras"):
-                                for aura in auras.get("auras"):
-                                    if aura.get("nam") == "Solar Flare":
-                                        print_debug(f"{cInf} Aura: {aura.get('msgOn')}")
-                                        if aura.get("isNew") == True:
-                                            target_monsters = "Blessless Deer,Ascended Solstice"
-                                            
-                                    if aura.get("nam") == "Moonveil":
-                                        print_debug(f"{cInf} Aura: {aura.get('msgOn')}")
-                                        if aura.get("isNew") == True:
-                                            target_monsters = "Ascended Solstice,Suffocated Light"
-                                            
-                                    if aura.get("nam") == "Sun's Heat":
-                                        if aura.get("isNew") == True:
-                                            stop_attack = True
-                                            print_debug(f"stop_attack: {stop_attack}")
-                            if auras.get("aura"):
-                                aura = auras.get("aura")
-                                if aura.get("nam") == "Sun's Heat":
-                                    if auras.get("cmd") == "aura-":
-                                        stop_attack = False
-                                        print_debug(f"stop_attack: {stop_attack}")
+                                if auras.get("auras")[0].get("nam") == "Lunar Prance":
+                                    deerHp = deerHp - 10
+                                    print_debug(f"Blessless Deer HP : < {deerHp}%")
+                                    break
                     if anims:
                         for anim in anims:
                             msg = anim.get("msg")
                             if msg:
-                                if log_taunt:
-                                    print_debug(f"Received message: {msg}")
                                 if "gather" in msg.lower():
-                                    do_taunt = True
+                                    light_gather_count += 1
+                                    if light_gather_count % 2 != 0:
+                                        do_taunt = True
                                 if  "sun converges" in msg.lower():
                                     converges_count += 1
                                     if converges_count % 2 != 0:
                                         do_taunt = True
                     if m:
                         for mon_map_id, mon_condition in m.items():
-                            is_alive = int(mon_condition.get("intHP")) > 0
+                            monHp = int(mon_condition.get('intHP'))
+                            if monHp:
+                                mon = cmd.get_monster(f"id.{mon_map_id}")
+                                monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
+                                print_debug(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
+                            is_alive = monHp > 0
                             if (is_alive == False):
-                                print(f"Monster id:{mon_map_id} is dead.")
+                                print_debug(f"Monster id:{mon_map_id} is dead.")
             except:
                 return
     cmd.bot.subscribe(msg_taunt_handler)
@@ -135,10 +155,10 @@ async def main(cmd: Command):
     
     while cmd.isStillConnected():
         print_debug("Idle...")
-        while cmd.is_monster_alive():
-            while stop_attack:
-                # should do spam buff and heal here
-                await cmd.sleep(500)
+            
+        while cmd.is_monster_alive():                                
+            stop_attack = cmd.bot.player.hasAura("Sun's Heat")
+            
             if not is_attacking:
                 print_debug(f"[{cmd.bot.player.CELL}] Attacking monsters...")
                 is_attacking = True
@@ -147,10 +167,11 @@ async def main(cmd: Command):
                     print_debug(f"[{cmd.bot.player.CELL}] Doing taunt...")
                 await cmd.sleep(1000)
                 await cmd.use_skill(5, target_monsters=target_monsters)
-                await cmd.sleep(1000)
+                await cmd.sleep(500)
+                await cmd.use_skill(5, target_monsters=target_monsters)
                 do_taunt = False
             else:
-                await cmd.use_skill(skill_list[skill_index], target_monsters)
+                await cmd.use_skill(skill_list[skill_index], target_monsters, buff_only=stop_attack)
                 skill_index += 1
                 if skill_index >= len(skill_list):
                     skill_index = 0

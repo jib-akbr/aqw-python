@@ -21,12 +21,12 @@ b = Bot(
         "Ecliptic Offering",
     ], 
     showLog=True, 
-    showDebug=False,
+    showDebug=True,
     showChat=True,
     isScriptable=True,
-    followPlayer=config.slaves[0].username,
+    followPlayer=config.slaves[0].username.lower(),
     slavesPlayer=[slave.username for slave in config.slaves],
-    farmClass=selected_slave.char_class
+    farmClass=selected_slave.char_class,
 )
 b.set_login_info(selected_slave.username, selected_slave.password, config.server)
 
