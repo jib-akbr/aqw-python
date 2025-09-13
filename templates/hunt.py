@@ -47,8 +47,12 @@ async def hunt_item(
         if cmd.is_in_inventory(item_name, item_qty, operator=">=") or cmd.is_in_inventory(item_name, item_qty, operator=">=", isTemp=True):
             await cmd.leave_combat()
             break
-        
-        await cmd.use_skill(skill_list[skill_index], monster_name, hunt)
+        playerclass = cmd.get_equipped_class()
+        playerclass = playerclass.item_name if playerclass else ""
+        if "chrono shadow" in playerclass.lower():
+            await cmd.wait_use_skill(skill_list[skill_index])
+        else:
+            await cmd.use_skill(skill_list[skill_index], monster_name, hunt)
         skill_index += 1
         if skill_index >= len(skill_list):
             skill_index = 0

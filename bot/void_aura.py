@@ -3,8 +3,9 @@ from core.commands import Command
 from templates.hunt import hunt_item
 
 async def main(cmd: Command):
-    private_room_number = 9999999999
-    item_qty = 20
+    private_room_number = 12345
+    max = 5
+    item_qty = 20*max
 
     await cmd.join_map("whitemap")
 
@@ -22,7 +23,7 @@ async def main(cmd: Command):
         "Void Aura"
     ])
     
-    await cmd.equip_item("Legion Revenant")
+    # await cmd.equip_item("Legion Revenant")
 
     # Define the list of dictionaries
     hunt_tasks = [
@@ -140,7 +141,36 @@ async def main(cmd: Command):
                 pad=task["pad"],
                 monster_name=task["monster_name"],
                 farming_logger=True,
+                skill_list=[3,0,2,0,3,0,2,0,3,0,4,1],
             )
 
-        await cmd.ensure_turn_in_quest(4432)
+        await cmd.ensure_turn_in_quest(4432,amount=max)
+
+whitelist = [
+        "Astral Ephemerite Essence",
+        "Belrot the Fiend Essence",
+        "Black Knight Essence",
+        "Tiger Leech Essence",
+        "Carnax Essence",
+        "Chaos Vordred Essence",
+        "Dai Tengu Essence",
+        "Unending Avatar Essence",
+        "Void Dragon Essence",
+        "Creature Creation Essence",
+        "Void Aura"
+    ]
+
+if __name__ == "__main__":
+    import asyncio
+    bot = Bot(itemsDropWhiteList=whitelist,
+              cmdDelay=600,
+              showDebug=True,
+              autoRelogin=True,
+              isScriptable=True)  
+    run = Command(bot) 
+    login = input("Login (username,pass): ").split(",")
+    
+    bot.set_login_info(login[0], login[1],"Safiria")  # Set login info
+
+    asyncio.run(bot.start_bot(main))  # Run the main coroutine
 
