@@ -26,6 +26,7 @@ class Player:
         self.CELL = ""
         self.PAD = ""
         self.CDREDUCTION = 0
+        self.ManaCost = 1.0
         self.LOGINUSERID = 0
         self.INVENTORY: List[ItemInventory] = []
         self.TEMPINVENTORY: List[ItemInventory] = []

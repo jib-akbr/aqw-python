@@ -421,6 +421,8 @@ class Bot:
             elif cmd == "stu":
                 if data["sta"].get("$tha"):
                     self.player.CDREDUCTION = data["sta"].get("$tha")
+                if data["sta"].get("$cmc"):
+                    self.player.ManaCost = data["sta"].get("$cmc")    
             elif cmd == "ct":
                 anims = data.get("anims")
                 a = data.get("a")
@@ -905,8 +907,8 @@ class Bot:
         self.write_message(f"%xt%zm%acceptQuest%{self.areaId}%{quest_id}%")
         self.do_wait(500)
         
-    def turn_in_quest(self, quest_id: int, item_id: int = -1):
-        packet = f"%xt%zm%tryQuestComplete%{self.areaId}%{quest_id}%{item_id}%false%1%wvz%"
+    def turn_in_quest(self, quest_id: int, item_id: int = -1, qty: int = 1):
+        packet = f"%xt%zm%tryQuestComplete%{self.areaId}%{quest_id}%{item_id}%false%{qty}%wvz%"
         self.write_message(packet)
         self.do_wait(500)
 
@@ -946,7 +948,7 @@ class Bot:
         self.write_message(f"%xt%zm%gar%1%0%{','.join(final_target)}%wvz%")
     
     def use_skill_to_myself(self, skill):
-        self.write_message(f"%xt%zm%gar%1%0%a4>p:{self.username_id}%wvz%")
+        self.write_message(f"%xt%zm%gar%1%0%a{skill}>p:{self.username_id}%wvz%")
         
     def check_is_skill_safe(self, skill: int):
         conditions = {
@@ -974,6 +976,12 @@ class Bot:
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)
         if equipped_class:
+            current_mana = self.player.MANA
+            skillCost = self.player.SKILLS[skill]["mp"]*self.player.ManaCost
+            # Mana check 
+            if current_mana < skillCost:
+                print(f"Not enough mana to use skill {skill}. Current mana: {current_mana}, Skill cost: {skillCost}")
+                return False
             if equipped_class.item_name in conditions:
                 condition = conditions[equipped_class.item_name]
                 current_hp = self.player.CURRENT_HP

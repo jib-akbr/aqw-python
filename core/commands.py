@@ -128,9 +128,9 @@ class Command:
                 return
     
     @check_alive
-    async def ensure_turn_in_quest(self, quest_id: int, item_id = -1) -> None:
+    async def ensure_turn_in_quest(self, quest_id: int, item_id = -1, amount = 1) -> None:
         while self.quest_in_progress(quest_id) and self.isStillConnected():
-            await self.turn_in_quest(quest_id, item_id)
+            await self.turn_in_quest(quest_id, item_id,amount)
             await self.sleep(1000)
             if quest_id in self.bot.failed_get_quest_datas:
                 return
@@ -221,7 +221,7 @@ class Command:
             return
 
         skill = self.bot.player.SKILLS[int(index)]
-        self.bot.skillAnim = skill["anim"]
+        self.bot.skillAnim = skill.get("anim", None) if skill else None
         self.bot.skillNumber = index
         max_target = int(skill.get("tgtMax", 1))
 
@@ -323,10 +323,10 @@ class Command:
         return self.bot.can_turn_in_quest(questId)
     
     @check_alive
-    async def turn_in_quest(self, quest_id: int, item_id: int = -1) -> None:
+    async def turn_in_quest(self, quest_id: int, item_id: int = -1, qty: int = 1) -> None:
         self.quest_to_check = quest_id
         await self.bot.ensure_leave_from_combat()
-        self.bot.turn_in_quest(quest_id, item_id)
+        self.bot.turn_in_quest(quest_id, item_id, qty)
         await asyncio.sleep(1)
         
     async def buy_item_cmd(self, item_name: str, shop_id: int, qty: int = 1):
