@@ -7,6 +7,7 @@ from colorama import Fore
 from .core_temple import *
 
 target_monsters = "Ascended Midnight"
+pid = None
 stop_attack = False
 do_taunt = True
 log_taunt = False
@@ -15,76 +16,55 @@ cleared_count = 0
 
 # SLAVE MAID
 async def main(cmd: Command):
-    global target_monsters, stop_attack, do_taunt, log_taunt, converges_count
-    
-    async def go_to_master():
+    global target_monsters, pid, stop_attack, do_taunt, log_taunt, converges_count
+
+    def reset_counters():
         global do_taunt, stop_attack, converges_count, cleared_count
         converges_count = 0 # reset converges count
         do_taunt = False # reset taunt
         stop_attack = False # reset stop attack
-        
-        if cmd.bot.follow_player:
-            print_debug(f"[{cmd.bot.player.CELL}] Going to master's place...")
-            cmd.bot.jump_cell(cmd.bot.player.CELL, cmd.bot.player.PAD)
-            await cmd.bot.ensure_leave_from_combat()
-            await cmd.bot.goto_player(cmd.bot.follow_player)
-            await cmd.sleep(500)
-            if cmd.bot.player.CELL == "r4":
-                cleared_count += 1
-                print_debug(f"Dungeon cleared {cleared_count} times.", Fore.MAGENTA)
             
     def msg_taunt_handler(message):
-        global target_monsters, stop_attack, do_taunt, log_taunt, converges_count
+        global target_monsters, pid, stop_attack, do_taunt, log_taunt, converges_count
         if message:
             if is_valid_json(message):
                 data = json.loads(message)
             try:
                 data = data["b"]["o"]
-                cmd = data["cmd"]
-                if cmd == "ct":
+                cmdData = data["cmd"]
+                if cmdData =="pi":
+                    pid = data.get("pid")
+                if cmdData == "ct":
                     anims = data.get("anims") # Animations
                     m = data.get("m") # Monster conditions
                     p = data.get("p") # Player conditions
                     if anims:
                         for anim in anims:
-                            msg = anim.get("msg")
-                            if msg:
-                                if  "moon converges" in msg.lower():
-                                    converges_count += 1
-                                    if converges_count % 2 != 0:
-                                        do_taunt = True
+                            msg = anim.get("msg", "").lower()
+                            if "moon converges" in msg:
+                                converges_count += 1
+                                do_taunt = converges_count % 2 != 0
                     if m:
                         for mon_map_id, mon_condition in m.items():
                             monHp = int(mon_condition.get('intHP'))
+                            # if monHp:
+                            #     mon = cmd.get_monster(f"id.{mon_map_id}")
+                            #     monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
+                            #     print_debug2(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
                             is_alive = monHp > 0
                             if (is_alive == False):
                                 print_debug(f"Monster id:{mon_map_id} is dead.")
             except:
                 return
     cmd.bot.subscribe(msg_taunt_handler)
-
-    invitation_queue = asyncio.Queue()
-    def party_invitation_handler(message):
-        if message:
-            if is_valid_json(message):
-                data = json.loads(message)
-            try:
-                data = data["b"]["o"]
-                if data["cmd"] == "pi":
-                    invitation_queue.put_nowait(data["pid"])
-            except:
-                return
-    cmd.bot.subscribe(party_invitation_handler)
     
     await cmd.equip_item(cmd.getFarmClass())
     await cmd.equip_scroll("Scroll of Enrage")
     
-    while (cmd.bot.strMapName != "yulgar"):
-        await go_to_master()
+    print_debug("Waiting for party invitation...")
+    while pid is None:
+        await go_to_master(cmd)
         await cmd.sleep(1000)
-    
-    print_debug("Waiting party invitation...")
-    pid = await invitation_queue.get()
     print_debug(f"Accepting party invitation from PID: {pid}")
     await cmd.send_packet(f"%xt%zm%gp%1%pa%{pid}%")
     await cmd.sleep(1000)
@@ -94,19 +74,19 @@ async def main(cmd: Command):
     is_attacking = False
     
     while cmd.isStillConnected():
-        await go_to_master()
+        reset_counters()
+        await go_to_master(cmd)
             
-        while cmd.is_monster_alive():
-            target_monsters = "Ascended Midnight"
-            stop_attack = cmd.bot.player.hasAura("Sun's Heat")
-            
-            while cmd.bot.player.ISDEAD:
-                print_debug(f"[{cmd.bot.player.CELL}] player death...")
+        master = cmd.get_player_in_map(cmd.bot.follow_player)
+        while cmd.is_monster_alive() and master.str_frame == cmd.bot.player.CELL:  
+            if cmd.bot.player.ISDEAD:
                 is_attacking = False
-                await cmd.sleep(500)
-                
-            if cmd.bot.player.hasAura("Sun's Heat"):
-                target_monsters = "Moon Haze"
+                print_debug("You are dead. Waiting to respawn...")
+                await cmd.sleep(1000)
+                break
+
+            target_monsters = "Ascended Midnight,Sunset Knight"
+            stop_attack = cmd.bot.player.hasAura("Sun's Heat")
                 
             if cmd.bot.player.hasAura("Solar Flare"):
                 target_monsters = "Blessless Deer"
@@ -119,7 +99,8 @@ async def main(cmd: Command):
                     print_debug(f"[{cmd.bot.player.CELL}] Doing taunt...")
                 await cmd.sleep(1000)
                 await cmd.use_skill(5, target_monsters=target_monsters)
-                await cmd.sleep(1000)
+                await cmd.sleep(500)
+                await cmd.use_skill(5, target_monsters=target_monsters)
                 do_taunt = False
             else:
                 await cmd.use_skill(skill_list[skill_index], target_monsters, buff_only=stop_attack)

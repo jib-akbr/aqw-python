@@ -63,7 +63,8 @@ class Bot:
             farmClass: str = None,
             soloClass: str = None,
             restartOnAFK: bool = True,
-            autoAdjustSkillDelay: bool = False
+            autoAdjustSkillDelay: bool = False,
+            respawnCellPad: List[str] = None # format: "cell,pad"
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -78,6 +79,7 @@ class Bot:
         self.farmClass = farmClass
         self.soloClass = soloClass
         self.restart_on_afk = restartOnAFK
+        self.respawn_cell_pad = respawnCellPad
 
         self.auto_relogin = False # sementara diset ke False untuk cegah stop_bot() di function read_server_in_background()
         
@@ -746,6 +748,7 @@ class Bot:
                     await self.ensure_leave_from_combat(always=True)
                 for player in self.player_in_area[:]:
                     if player.str_username.lower() == msg.split('%')[5].lower():
+                        print(f"{player.str_username} left the area")
                         self.player_in_area.remove(player)
                         break
             elif "uotls" in msg:

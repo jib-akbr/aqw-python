@@ -34,25 +34,45 @@ async def main(cmd: Command):
         converges_count = 0 # reset converges count
         light_gather_count = 0 # reset light gather count
         deerHp = 100 # in percentage
+
+        # check all slaves are ready
+        for slave in cmd.bot.slaves_player:
+            player = cmd.get_player_in_map(slave)
+            if player:
+                hpPercent = round(((player.int_hp/player.int_hp_max)*100), 2) if player.int_hp_max != 0 else 0
+                if player.str_frame != cmd.bot.player.PAD and player.int_state == 0 and hpPercent > 80:
+                    print_debug(f"Waiting for {slave} to be ready...")
+                    while player.str_frame != cmd.bot.player.CELL or player.int_state != 0 or hpPercent <= 80:
+                        await cmd.sleep(100)
+                        player = cmd.get_player_in_map(slave)
+                await cmd.sleep(500)
         
         print_debug(f"Moving to next cell...")
+        cmd.bot.respawn_cell_pad = None
         await cmd.sleep(2000)
         if cmd.bot.player.CELL == "Enter":
-            await cmd.jump_cell("r1", "Left")
+            if not cmd.get_monster("Blessless Deer").is_alive and not cmd.get_monster("Fallen Star").is_alive:
+                await cmd.jump_cell("r1", "Left")
         elif cmd.bot.player.CELL == "r1":
-            await cmd.jump_cell("r2", "Left")
+            if not cmd.get_monster("Suffocated Light").is_alive and not cmd.get_monster("Imprisoned Fairy").is_alive:
+                await cmd.jump_cell("r2", "Left")
         elif cmd.bot.player.CELL == "r2":
-            await cmd.jump_cell("r3", "Left")
+            if not cmd.get_monster("Sunset Knight").is_alive and not cmd.get_monster("Moon Haze").is_alive:
+                cmd.bot.respawn_cell_pad = ["Enter", "Spawn"]
+                await cmd.jump_cell("r3", "Left")
         elif cmd.bot.player.CELL == "r3":
-            await cmd.jump_cell("r4", "Left")
-        elif cmd.bot.player.CELL == "r4":
+            if not cmd.get_monster("Ascended Midnight").is_alive and not cmd.get_monster("Ascended Solstice").is_alive:
+                await cmd.jump_cell("r3a", "Left")
+        elif cmd.bot.player.CELL == "r3a":
             elapsed_seconds = time.monotonic() - timeleapse
             minutes = int(elapsed_seconds // 60)
             seconds = int(elapsed_seconds % 60)
             cleared_count += 1
-            print_debug(f"Dungeon cleared {cleared_count} times.")
-            print_debug(f"Total time taken: {minutes} minutes and {seconds} seconds.")
+            await cmd.send_chat(f"Dungeon cleared {cleared_count} times.")
+            await cmd.send_chat(f"Total time taken: {minutes} minutes and {seconds} seconds.")
             print_debug(f"Entering new queue...")
+            await cmd.join_map("yulgar", roomNumber=999999)
+            await cmd.sleep(4000)
             await enter_dungeon()
         
     def msg_taunt_handler(message):
@@ -77,23 +97,22 @@ async def main(cmd: Command):
                                     break
                     if anims:
                         for anim in anims:
-                            msg = anim.get("msg")
-                            if msg:
-                                if "gather" in msg.lower():
-                                    light_gather_count += 1
-                                    if light_gather_count % 2 != 0:
-                                        do_taunt = True
-                                if  "sun converges" in msg.lower():
-                                    converges_count += 1
-                                    if converges_count % 2 != 0:
-                                        do_taunt = True
+                            msg = anim.get("msg", "").lower()
+                            if "gather" in msg:
+                                light_gather_count += 1
+                                if light_gather_count % 2 != 0:
+                                    do_taunt = True
+                            if  "sun converges" in msg.lower():
+                                converges_count += 1
+                                if converges_count % 2 != 0:
+                                    do_taunt = True
                     if m:
                         for mon_map_id, mon_condition in m.items():
                             monHp = int(mon_condition.get('intHP'))
-                            if monHp:
-                                mon = cmd.get_monster(f"id.{mon_map_id}")
-                                monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
-                                print_debug(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
+                            # if monHp:
+                            #     mon = cmd.get_monster(f"id.{mon_map_id}")
+                            #     monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
+                            #     print_debug2(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
                             is_alive = monHp > 0
                             if (is_alive == False):
                                 print_debug(f"Monster id:{mon_map_id} is dead.")
@@ -127,12 +146,16 @@ async def main(cmd: Command):
     
     while cmd.isStillConnected():
         print_debug("Idle...")
-            
-        while cmd.is_monster_alive():    
-            target_monsters = "Ascended Solstice,Blessless Deer,Suffocated Light"
-            
-            if cmd.bot.player.hasAura("Sun's Heat"):
-                target_monsters = "Moon Haze"
+        
+        while cmd.is_monster_alive():
+            if cmd.bot.player.ISDEAD:
+                is_attacking = False
+                print_debug("You are dead. Waiting to respawn...")
+                await cmd.sleep(1000)
+                break
+
+            target_monsters = "Ascended Solstice,Blessless Deer,Suffocated Light,Sunset Knight"
+            stop_attack = cmd.bot.player.hasAura("Sun's Heat")
 
             if not is_attacking:
                 print_debug(f"[{cmd.bot.player.CELL}] Attacking monsters...")

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from colorama import Fore
 from model.inventory import ItemType, ItemInventory, ScrollType
 from model.shop import Shop
-from model import Monster
+from model import Monster, PlayerArea
 import json
 from core.utils import normalize
 
@@ -106,6 +106,9 @@ class Command:
         print(Fore.RED + msg + Fore.RESET)
         print(Fore.RED + "stop bot: " + self.bot.player.USER + Fore.RESET)
         self.bot.stop_bot()
+
+    async def send_chat(self, message: str):
+        await self.send_packet(f"%xt%zm%message%{self.bot.areaId}%{message}%zone%")
     
     @check_alive
     async def goto_player(self, player_name: str):
@@ -569,6 +572,18 @@ class Command:
         if self.bot.player.CELL.lower() == cell:
             count += 1
         return count >= player_count
+    
+    def get_player_in_map(self, name: str) -> PlayerArea:
+        for player in self.bot.player_in_area:
+            if player.str_username.lower() == name.lower():
+                return player
+        return None
+    
+    def is_player_in_cell(self, name: str, cell: str) -> bool:
+        player = self.get_player_in_map(name)
+        if player and player.str_frame.lower() == cell.lower():
+            return True
+        return False
     
     def get_player_cell(self) -> str:
         return self.bot.player.getPlayerCell()[0]
