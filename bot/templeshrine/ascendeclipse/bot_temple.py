@@ -25,7 +25,7 @@ b = Bot(
     showChat=True,
     isScriptable=True,
     followPlayer=config.slaves[0].username.lower(),
-    slavesPlayer=[slave.username for slave in config.slaves],
+    slavesPlayer=[slave.username for i, slave in enumerate(config.slaves) if i != 0],
     farmClass=selected_slave.char_class,
     respawnCellPad=["Enter", "Spawn"],
 )

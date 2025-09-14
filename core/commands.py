@@ -109,6 +109,9 @@ class Command:
 
     async def send_chat(self, message: str):
         await self.send_packet(f"%xt%zm%message%{self.bot.areaId}%{message}%zone%")
+
+    async def rest(self):
+        await self.send_packet(f"%xt%zm%restRequest%1%%")
     
     @check_alive
     async def goto_player(self, player_name: str):
@@ -283,7 +286,7 @@ class Command:
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
             if index == 5:
                 self.bot.use_scroll(final_ids, max_target)
-            if index < 5 and len(final_ids) > 0 and not buff_only:
+            if index < 5 and len(final_ids) > 0:
                 self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
         elif skill["tgt"] == "f":
             self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
@@ -581,7 +584,7 @@ class Command:
     
     def is_player_in_cell(self, name: str, cell: str) -> bool:
         player = self.get_player_in_map(name)
-        if player and player.str_frame.lower() == cell.lower():
+        if player and player.str_frame and player.str_frame.lower() == cell.lower():
             return True
         return False
     

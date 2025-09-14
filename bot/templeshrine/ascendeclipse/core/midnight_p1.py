@@ -6,26 +6,31 @@ from core.commands import Command
 from colorama import Fore
 from .core_temple import *
 
-target_monsters = "Ascended Midnight"
 pid = None
+target_monsters = "Ascended Midnight,Blessless Deer"
 stop_attack = False
 do_taunt = True
-log_taunt = False
+taunt_target = None
+log_taunt = True
 converges_count = 0
-cleared_count = 0
+light_gather_count = 0
+sun_warmth_count = 0
+moonlight_gaze_count = 0
 
 # SLAVE MAID
 async def main(cmd: Command):
-    global target_monsters, pid, stop_attack, do_taunt, log_taunt, converges_count
+    global pid, target_monsters, stop_attack, do_taunt, taunt_target, log_taunt, converges_count, light_gather_count, sun_warmth_count, moonlight_gaze_count
 
     def reset_counters():
-        global do_taunt, stop_attack, converges_count, cleared_count
+        global do_taunt, stop_attack, converges_count, sun_warmth_count, moonlight_gaze_count
         converges_count = 0 # reset converges count
+        sun_warmth_count = 0 # reset Sun's Warmth count
+        moonlight_gaze_count = 0 # reset Moonlight Gaze count
         do_taunt = False # reset taunt
         stop_attack = False # reset stop attack
             
-    def msg_taunt_handler(message):
-        global target_monsters, pid, stop_attack, do_taunt, log_taunt, converges_count
+    def msg_handler(message):
+        global target_monsters, pid, stop_attack, do_taunt, taunt_target, log_taunt, converges_count, light_gather_count, sun_warmth_count, moonlight_gaze_count
         if message:
             if is_valid_json(message):
                 data = json.loads(message)
@@ -38,28 +43,45 @@ async def main(cmd: Command):
                     anims = data.get("anims") # Animations
                     m = data.get("m") # Monster conditions
                     p = data.get("p") # Player conditions
+                    a = data.get("a") # Auras
+                    if a:
+                        for a_item in a:
+                            for aura in a_item.get("auras", []):
+                                if cmd.bot.user_id in a_item.get("tInf", ""):
+                                    if aura.get("nam") == "Sun's Heat":
+                                        print_debug("Sun's Heat") 
+                                    if aura.get("nam") == "Moonlight Stun":
+                                        print_debug("Moonlight Stun")
+                                    # if aura.get("nam") == "Sun's Warmth":
+                                    #     sun_warmth_count += 1
+                                    #     if sun_warmth_count % 2 == 0:
+                                    #         do_taunt = True
+                                    #         taunt_target = "Sunset Knight"
+                                    # if aura.get("nam") == "Moonlight Gaze":
+                                    #     moonlight_gaze_count += 1
+                                    #     if moonlight_gaze_count % 2 != 0:
+                                    #         do_taunt = True
+                                    #         taunt_target = f"Moon Haze,{moonlight_gaze_count}"
                     if anims:
                         for anim in anims:
                             msg = anim.get("msg", "").lower()
+                            if "gather" in msg:
+                                light_gather_count += 1
+                                do_taunt = light_gather_count % 2 == 0
                             if "moon converges" in msg:
                                 converges_count += 1
                                 do_taunt = converges_count % 2 != 0
                     if m:
                         for mon_map_id, mon_condition in m.items():
                             monHp = int(mon_condition.get('intHP'))
-                            # if monHp:
-                            #     mon = cmd.get_monster(f"id.{mon_map_id}")
-                            #     monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
-                            #     print_debug2(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
                             is_alive = monHp > 0
                             if (is_alive == False):
                                 print_debug(f"Monster id:{mon_map_id} is dead.")
             except:
                 return
-    cmd.bot.subscribe(msg_taunt_handler)
+    cmd.bot.subscribe(msg_handler)
     
-    await cmd.equip_item(cmd.getFarmClass())
-    await cmd.equip_scroll("Scroll of Enrage")
+    await prepare_items(cmd)
     
     print_debug("Waiting for party invitation...")
     while pid is None:
@@ -76,31 +98,35 @@ async def main(cmd: Command):
     while cmd.isStillConnected():
         reset_counters()
         await go_to_master(cmd)
+
+        if cmd.bot.player.CELL != "r3a":
+            await cmd.rest()
+            await cmd.sleep(8000)
             
         master = cmd.get_player_in_map(cmd.bot.follow_player)
         while cmd.is_monster_alive() and master.str_frame == cmd.bot.player.CELL:  
             if cmd.bot.player.ISDEAD:
                 is_attacking = False
-                print_debug("You are dead. Waiting to respawn...")
+                print_debug("You are dead. Waiting to respawn...", Fore.RED)
                 await cmd.sleep(1000)
                 break
 
-            target_monsters = "Ascended Midnight,Sunset Knight"
             stop_attack = cmd.bot.player.hasAura("Sun's Heat")
-                
-            if cmd.bot.player.hasAura("Solar Flare"):
-                target_monsters = "Blessless Deer"
+
+            # if cmd.bot.player.hasAura("Solar Flare"):
+            #     target_monsters = "Blessless Deer"
+            # else:
+            #     target_monsters = "Ascended Midnight"
             
             if not is_attacking:
                 print_debug(f"[{cmd.bot.player.CELL}] Attacking monsters...")
                 is_attacking = True
             if do_taunt:
-                if log_taunt:
-                    print_debug(f"[{cmd.bot.player.CELL}] Doing taunt...")
-                await cmd.sleep(1000)
-                await cmd.use_skill(5, target_monsters=target_monsters)
-                await cmd.sleep(500)
-                await cmd.use_skill(5, target_monsters=target_monsters)
+                if taunt_target is None:
+                    await use_taunt(cmd, target_monsters=target_monsters, show_log=log_taunt)
+                else:
+                    await use_taunt(cmd, target_monsters=taunt_target, show_log=log_taunt)
+                    taunt_target = None
                 do_taunt = False
             else:
                 await cmd.use_skill(skill_list[skill_index], target_monsters, buff_only=stop_attack)

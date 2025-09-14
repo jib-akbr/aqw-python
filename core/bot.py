@@ -918,8 +918,6 @@ class Bot:
     def use_scroll(self, monsterid, max_target):
         self.target = [f"i1>m:{i}" for i in monsterid][:max_target]
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%{self.scroll_id}%wvz%")
-        # print(f"%xt%zm%gar%1%0%{','.join(self.target)}%{self.scroll_id}%wvz%")
-        # print(f"[{datetime.now().strftime('%H:%M:%S')}] %xt%zm%gar%1%0%{','.join(self.target)}%{scroll_id}%wvz%")
         
     def use_potion(self, potion_id):
         self.target = [f"i1>p:{i}" for i in monsterid][:targetMax]
@@ -935,7 +933,8 @@ class Bot:
                 self.player.setLastTarget(mon)
                 break
         self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
-        # add_log(f"tgt_mon: {self.target}")
+        # if skill != "a":
+        #     add_log(f"tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
 
     def use_skill_to_player(self, skill, max_target):
@@ -971,7 +970,7 @@ class Bot:
                 "condition": lambda hp, threshold: hp < threshold
             },
             # "archpaladin": {
-            #     "hp_threshold": 40,
+            #     "hp_threshold": 70,
             #     "skills_to_check": [3],
             #     "condition": lambda hp, threshold: hp > threshold
             # },
@@ -983,7 +982,7 @@ class Bot:
             skillCost = self.player.SKILLS[skill]["mp"]*self.player.ManaCost
             # Mana check 
             if current_mana < skillCost:
-                print(f"Not enough mana to use skill {skill}. Current mana: {current_mana}, Skill cost: {skillCost}")
+                # print(f"Not enough mana to use skill {skill}. Current mana: {current_mana}, Skill cost: {skillCost}")
                 return False
             if equipped_class.item_name in conditions:
                 condition = conditions[equipped_class.item_name]
