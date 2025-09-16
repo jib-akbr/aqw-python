@@ -22,29 +22,7 @@ from model import ItemInventory, ItemType, Faction, PlayerArea
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
 import time
 import traceback
-init(autoreset=True, convert=True)
-
-# ==========================================================
-# BAGIAN GLOBAL: Didefinisikan di luar fungsi manapun
-# ==========================================================
-colorama.init()
-
-MOVE_UP = "\033[F"
-ERASE_LINE = "\033[K"
-logs = deque(maxlen=5)
-
-def add_log(message: str):
-    """
-    Fungsi ini ada di scope GLOBAL.
-    Fungsi ini bertindak sebagai "alat" logging serbaguna.
-    """
-    if logs:
-        print(MOVE_UP * (len(logs)), end="")
-        print(ERASE_LINE * (len(logs) + 1), end="")
-    
-    logs.append(f"{datetime.now().strftime('%H:%M:%S')} - {message}")
-    print("\n".join(logs))
-    
+init(autoreset=True, convert=True) 
     
 class Bot:
 
@@ -93,7 +71,6 @@ class Bot:
         self.index = 0
         self.areaId = None
         self.canuseskill = True
-        self.skillNumber = 0
         self.skillAnim = None
         self.username = ""
         self.password = ""
@@ -750,7 +727,7 @@ class Bot:
                     await self.ensure_leave_from_combat(always=True)
                 for player in self.player_in_area[:]:
                     if player.str_username.lower() == msg.split('%')[5].lower():
-                        print(f"{player.str_username} left the area")
+                        # print(f"{player.str_username} has left the area")
                         self.player_in_area.remove(player)
                         break
             elif "uotls" in msg:
@@ -924,8 +901,6 @@ class Bot:
         self.write_message(f"%xt%zm%gar%1%0%i1>p:{self.user_id}%{potion_id}%wvz%")
 
     def use_skill_to_monster(self, skill, monsters_id, max_target):
-        # if not self.check_is_skill_safe(skill) or not monsters_id:
-        #     return
         if not monsters_id:
             return
         for mon in self.monsters:
@@ -933,21 +908,18 @@ class Bot:
                 self.player.setLastTarget(mon)
                 break
         self.target = [f"a{skill}>m:{i}" for i in monsters_id][:max_target]
-        # if skill != "a":
-        #     add_log(f"tgt_mon: {self.target}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%wvz%")
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_mon: {self.target}")
 
     def use_skill_to_player(self, skill, max_target):
-        if not self.check_is_skill_safe(skill):
-            return
         self.target = [f"a{skill}>p:{i}" for i in self.user_ids][:max_target-1]
         self.target.insert(0, f"a{skill}>p:{self.username_id}")
         final_target = []
         for tgt in self.target:
             if tgt not in final_target:
                 final_target.append(tgt)
-        # add_log(f"tgt_p: {','.join(self.target)}")
         self.write_message(f"%xt%zm%gar%1%0%{','.join(final_target)}%wvz%")
+        # print(f"[{datetime.now().strftime('%H:%M:%S')}] tgt_p: {','.join(final_target)}")
     
     def use_skill_to_myself(self, skill):
         self.write_message(f"%xt%zm%gar%1%0%a{skill}>p:{self.username_id}%wvz%")
@@ -969,11 +941,11 @@ class Bot:
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            # "archpaladin": {
-            #     "hp_threshold": 70,
-            #     "skills_to_check": [3],
-            #     "condition": lambda hp, threshold: hp > threshold
-            # },
+            "archpaladin": {
+                "hp_threshold": 40,
+                "skills_to_check": [3],
+                "condition": lambda hp, threshold: hp > threshold
+            },
         }
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)

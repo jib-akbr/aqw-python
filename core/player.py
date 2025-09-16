@@ -101,11 +101,25 @@ class Player:
                 return [server["sIP"], server["iPort"]]
         return ["", 0]
     
+    def getNextUseSkill(self, skillNumber: int):
+        skills = self.SKILLS[skillNumber]
+        if datetime.now() > skills["nextUse"]:
+            return skills["nextUse"]
+        return None
+    
     def canUseSkill(self, skillNumber):
         if skillNumber > len(self.SKILLS):
             return False
         skills = self.SKILLS[skillNumber]
-        if datetime.now() > skills["nextUse"]:
+        
+        # milliseconds = int(skills['nextUse'].timestamp() * 1000)
+        # cd_left = milliseconds - int(round(datetime.now().timestamp() * 1000))    
+        # if cd_left > 0:
+        #     print(Fore.RED + f"skill: {skillNumber} cd: {cd_left}ms" + Fore.RESET)
+        # else:
+        #     print(Fore.GREEN + f"skill: {skillNumber} cd: {cd_left}ms" + Fore.RESET)
+            
+        if datetime.now() >= skills["nextUse"]:
             return True
         return False
 
@@ -131,8 +145,13 @@ class Player:
         if except_skill == 0:
             return
         for skill_number in range(len(self.SKILLS)):
-            if except_skill != skill_number and skill_number != 0:
-                self.updateNextUse(skill_number, delay_ms)
+            if except_skill != skill_number:
+                skills = self.SKILLS[skill_number]
+                milliseconds = int(skills['nextUse'].timestamp() * 1000)
+                if milliseconds >= int(round(datetime.now().timestamp() * 1000)):
+                    return
+                else:
+                    self.updateNextUse(skill_number, delay_ms)
             # elif skill_number == except_skill:
             #     self._update_skill_time(skill_number, float(500))
     

@@ -211,10 +211,10 @@ class Command:
                 return
             
     @check_alive
-    async def wait_use_skill(self, index: int):
+    async def wait_use_skill(self, index: int, target_monsters: str = "*"):
         while not self.bot.player.canUseSkill(int(index)):
             await self.sleep(100)
-        await self.use_skill(index)
+        await self.use_skill(index, target_monsters)
         
     @check_alive
     async def use_skill(self,  
@@ -228,7 +228,6 @@ class Command:
 
         skill = self.bot.player.SKILLS[int(index)]
         self.bot.skillAnim = skill.get("anim", None) if skill else None
-        self.bot.skillNumber = index
         max_target = int(skill.get("tgtMax", 1))
 
         if skill["tgt"] == "h": 
@@ -286,15 +285,13 @@ class Command:
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
             if index == 5:
                 self.bot.use_scroll(final_ids, max_target)
-            if index < 5 and len(final_ids) > 0:
-                self.bot.use_skill_to_monster("a" if self.bot.skillNumber == 0 else self.bot.skillNumber, final_ids, max_target)
+            if index < 5 and len(final_ids) > 0 and not buff_only:
+                self.bot.use_skill_to_monster("a" if index == 0 else index, final_ids, max_target)
         elif skill["tgt"] == "f":
-            self.bot.use_skill_to_player(self.bot.skillNumber, max_target)
+            self.bot.use_skill_to_player(index, max_target)
         elif skill["tgt"] == "s":
             self.bot.use_skill_to_myself(index)
-        # self.bot.canuseskill = False
-        # self.bot.player.delayAllSkills(except_skill=index, delay_ms=1200)
-
+        
         await self.sleep(200)
         self.bot.player.updateNextUse(index)
         self.bot.player.SKILLS[int(index)]["canUseSkill"] = False
@@ -455,6 +452,8 @@ class Command:
         s_type = None
         for item in self.bot.player.INVENTORY:
             if normalize(item.item_name.lower()) == normalize(item_name.lower()):
+                if item.is_equipped:
+                    return
                 print(f"equipping {item_name}")
                 packet = f"%xt%zm%equipItem%{self.bot.areaId}%{item.item_id}%"
                 self.bot.write_message(packet)
