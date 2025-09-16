@@ -40,8 +40,9 @@ async def main(cmd: Command):
             minutes = int(elapsed_seconds // 60)
             seconds = int(elapsed_seconds % 60)
             cleared_count += 1
-            print_debug(f"Dungeon cleared {cleared_count} times.")
-            print_debug(f"Total time taken: {minutes} minutes and {seconds} seconds.")
+            await cmd.send_chat(f"Dungeon cleared {cleared_count} times.")
+            await cmd.sleep(1000)
+            await cmd.send_chat(f"Total time taken: {minutes} minutes and {seconds} seconds.")
             print_debug(f"Entering new queue...")
             await enter_dungeon()
             await cmd.sleep(4000)
@@ -100,7 +101,7 @@ async def main(cmd: Command):
         print_debug("Waiting for dungeon queue...")
         await cmd.sleep(200)
 
-    skill_list = [0,1,2,0,3,4]
+    skill_list = [0,1,2,1,2,0,3,4,3,4]
     skill_index = 0
     is_attacking = False
     while cmd.isStillConnected():
@@ -116,11 +117,11 @@ async def main(cmd: Command):
                 await cmd.use_skill(5, target_monsters="Hollow Midnight")
                 await cmd.sleep(1000)
                 do_taunt = False
-            else:
-                await cmd.use_skill(skill_list[skill_index], "Lunar Haze")
-                skill_index += 1
-                if skill_index >= len(skill_list):
-                    skill_index = 0
-            await cmd.sleep(100)
+                continue
+            await cmd.use_skill(skill_list[skill_index], "Lunar Haze")
+            skill_index += 1
+            if skill_index >= len(skill_list):
+                skill_index = 0
+            await cmd.sleep(200)
         is_attacking = False
         await to_next_cell()

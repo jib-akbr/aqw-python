@@ -14,24 +14,20 @@ taunt_target = None
 log_taunt = True
 converges_count = 0
 light_gather_count = 0
-sun_warmth_count = 0
-moonlight_gaze_count = 0
 
 # SLAVE MAID
 async def main(cmd: Command):
-    global pid, target_monsters, stop_attack, do_taunt, taunt_target, log_taunt, converges_count, light_gather_count, sun_warmth_count, moonlight_gaze_count
+    global pid, target_monsters, stop_attack, do_taunt, taunt_target, log_taunt, converges_count, light_gather_count
     
     def reset_counters():
-        global do_taunt, stop_attack, converges_count, light_gather_count, sun_warmth_count, moonlight_gaze_count
+        global do_taunt, stop_attack, converges_count, light_gather_count
         converges_count = 0 # reset converges count
         light_gather_count = 0 # reset light gather count
-        sun_warmth_count = 0 # reset Sun's Warmth count
-        moonlight_gaze_count = 0 # reset Moonlight Gaze count
         do_taunt = False # reset taunt
         stop_attack = False # reset stop attack
             
     def msg_handler(message):
-        global target_monsters, pid, stop_attack, do_taunt, taunt_target, log_taunt, converges_count, light_gather_count, sun_warmth_count, moonlight_gaze_count
+        global target_monsters, pid, stop_attack, do_taunt, taunt_target, log_taunt, converges_count, light_gather_count
         if message:
             if is_valid_json(message):
                 data = json.loads(message)
@@ -53,11 +49,6 @@ async def main(cmd: Command):
                                         print_debug("Sun's Heat") 
                                     if aura.get("nam") == "Moonlight Stun":
                                         print_debug("Moonlight Stun")
-                                    # if aura.get("nam") == "Sun's Warmth":
-                                    #     sun_warmth_count += 1
-                                    #     if sun_warmth_count % 2 == 0:
-                                    #         do_taunt = True
-                                    #         taunt_target = "Sunset Knight"
                                     if aura.get("nam") == "Moonlight Gaze":
                                         async def delayed_taunt():
                                             global do_taunt, taunt_target
@@ -68,9 +59,17 @@ async def main(cmd: Command):
                     if anims:
                         for anim in anims:
                             msg = anim.get("msg", "").lower()
+                            if "gather" in msg:
+                                light_gather_count += 1
+                                do_taunt = light_gather_count % 2 == 0
+                                if log_taunt:
+                                    print_debug(f"Gather count: {light_gather_count}")
                             if "moon converges" in msg:
                                 converges_count += 1
                                 do_taunt = converges_count % 2 == 0
+                                if log_taunt:
+                                    print_debug(f"Converges count: {converges_count}")
+
                     if m:
                         for mon_map_id, mon_condition in m.items():
                             monHp = int(mon_condition.get('intHP'))
@@ -91,7 +90,7 @@ async def main(cmd: Command):
     await cmd.send_packet(f"%xt%zm%gp%1%pa%{pid}%")
     await cmd.sleep(1000)
 
-    skill_list = [0,1,2,0,3,4]
+    skill_list = [0,1,2,3,4]
     skill_index = 0
     is_attacking = False
     
@@ -99,18 +98,12 @@ async def main(cmd: Command):
         reset_counters()
         await go_to_master(cmd)
 
-        if cmd.bot.player.CELL != "r3a":
+        if cmd.bot.player.CELL == "r3a":
             await cmd.rest()
             await cmd.sleep(8000)
             
         master = cmd.get_player_in_map(cmd.bot.follow_player)
-        while cmd.is_monster_alive() and master.str_frame == cmd.bot.player.CELL:  
-            if cmd.bot.player.ISDEAD:
-                is_attacking = False
-                print_debug("You are dead. Waiting to respawn...", Fore.RED)
-                await cmd.sleep(1000)
-                break
-
+        while cmd.is_monster_alive() and master.str_frame == cmd.bot.player.CELL: 
             stop_attack = cmd.bot.player.hasAura("Sun's Heat")
 
             if cmd.bot.player.hasAura("Solar Flare"):
@@ -133,5 +126,5 @@ async def main(cmd: Command):
                 skill_index += 1
                 if skill_index >= len(skill_list):
                     skill_index = 0
-            await cmd.sleep(100)
+            await skill_delay(cmd)
         is_attacking = False

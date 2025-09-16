@@ -40,8 +40,9 @@ async def main(cmd: Command):
             minutes = int(elapsed_seconds // 60)
             seconds = int(elapsed_seconds % 60)
             cleared_count += 1
-            print_debug(f"Dungeon cleared {cleared_count} times.")
-            print_debug(f"Total time taken: {minutes} minutes and {seconds} seconds.")
+            await cmd.send_chat(f"Dungeon cleared {cleared_count} times.")
+            await cmd.sleep(1000)
+            await cmd.send_chat(f"Total time taken: {minutes} minutes and {seconds} seconds.")
             print_debug(f"Entering new queue...")
             await enter_dungeon()
         
@@ -94,7 +95,7 @@ async def main(cmd: Command):
     await cmd.sleep(4000)
     await enter_dungeon()
 
-    skill_list = [0,1,2,0,3,4]
+    skill_list = [0,1,2,3,4]
     skill_index = 0
     is_attacking = False
     while cmd.isStillConnected():

@@ -1,23 +1,31 @@
-main_bot_path = "bot.templeshrine.midnightsun.core.main"
-main_account = "username"
-main_password = "password"
-main_class = "Chaos Avenger"
+class SlaveConfig:
+    def __init__(self, username, password, char_class, bot_path):
+        self.username = username
+        self.password = password
+        self.char_class = char_class
+        self.bot_path = bot_path
 
-slave_bot_path = "bot.templeshrine.midnightsun.core.slave"
 slaves = [
-    "username1", 
-    "username2", 
-    "username3"
-    ]
-slaves_passwords = [
-    "password", 
-    "password", 
-    "password"
-    ]
-slave_classes = [  
-    "ArchPaladin",
-    "Lord of Order", 
-    "Legion Revenant", 
-    ]
+    SlaveConfig("u", # MASTER
+                "p", 
+                "Chaos Avenger",
+                "bot.templeshrine.midnightsun.core.main"
+                ),
+    SlaveConfig("u", 
+                "p", 
+                "StoneCrusher", 
+                "bot.templeshrine.midnightsun.core.slave"
+                ),
+    SlaveConfig("u",
+                "p", 
+                "ArchPaladin", 
+                "bot.templeshrine.midnightsun.core.slave"
+                ),
+    SlaveConfig("u", 
+                "p", 
+                "Lord of Order", 
+                "bot.templeshrine.midnightsun.core.slave"
+                ),
+]
 
-server = "alteon"
+server = "safiria"

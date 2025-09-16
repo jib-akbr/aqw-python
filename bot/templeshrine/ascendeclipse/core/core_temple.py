@@ -22,8 +22,9 @@ def print_debug(message, color=Fore.YELLOW):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {color}{message}{Fore.RESET}")
 
 async def prepare_items(cmd: Command):
-    if cmd.get_quant_item("Scroll of Enrage") < 20:
-        cmd.bot.stop_bot("Not enough Scroll of Enrage. Minimum 20 required.")
+    minimalScroll = 50
+    if cmd.get_quant_item("Scroll of Enrage") < minimalScroll:
+        cmd.bot.stop_bot(f"Not enough Scroll of Enrage. Minimum {minimalScroll} required.")
         return
     await cmd.equip_item(cmd.getFarmClass())
     await cmd.equip_scroll("Scroll of Enrage")
@@ -33,9 +34,11 @@ async def go_to_master(cmd: Command):
         if not cmd.is_player_in_cell(cmd.bot.follow_player, cmd.bot.player.CELL):
             print_debug(f"[{cmd.bot.player.CELL}] Going to master's place...")
             while not cmd.is_player_in_cell(cmd.bot.follow_player, cmd.bot.player.CELL):
-                await cmd.sleep(1000)
-                await cmd.bot.ensure_leave_from_combat()
                 await cmd.bot.goto_player(cmd.bot.follow_player)
+                if cmd.get_player_in_map(cmd.bot.follow_player):
+                    await cmd.sleep(200)
+                else:
+                    await cmd.sleep(1000)
         await cmd.sleep(100)
     else:
         cmd.stopBot("No master assigned to follow.")
@@ -44,6 +47,10 @@ async def use_taunt(cmd: Command, target_monsters: str, show_log=False):
     if show_log or True:
         print_debug(f"[{cmd.bot.player.CELL}] Taunting {target_monsters}...", Fore.BLUE)
     await cmd.sleep(500)
-    await cmd.use_skill(5, target_monsters=target_monsters)
-    await cmd.sleep(500)
-    await cmd.use_skill(5, target_monsters=target_monsters)
+    # await cmd.use_skill(5, target_monsters=target_monsters)
+    # await cmd.sleep(500)
+    # await cmd.use_skill(5, target_monsters=target_monsters)
+    await cmd.wait_use_skill(5, target_monsters=target_monsters)
+    
+async def skill_delay(cmd: Command):
+    await cmd.sleep(100)
