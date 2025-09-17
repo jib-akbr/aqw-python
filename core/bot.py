@@ -946,11 +946,11 @@ class Bot:
                 "skills_to_check": [1, 3],
                 "condition": lambda hp, threshold: hp < threshold
             },
-            "archpaladin": {
-                "hp_threshold": 70,
-                "skills_to_check": [2],
-                "condition": lambda hp, threshold: hp > threshold
-            },
+            # "archpaladin": {
+            #     "hp_threshold": 70,
+            #     "skills_to_check": [2],
+            #     "condition": lambda hp, threshold: hp > threshold
+            # },
         }
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)

@@ -4,7 +4,7 @@ title Temple Shrine Dungeon
 echo Starting Temple Shrine Dungeon bots in tabs...
 
 set PROJECT_PATH="D:\Python\aqw-python"
-set BOT_PATH=bot.templeshrine.ascendeclipse.bot_temple
+set BOT_PATH=bot.templeshrine.eclipse.bot_temple
 set USER_NAME=u
 set PASSWORD=p
 

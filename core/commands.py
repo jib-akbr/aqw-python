@@ -223,7 +223,7 @@ class Command:
                         target_monsters: str = "*", 
                         hunt: bool = False, 
                         buff_only: bool = False,
-                        reload_delay: int = 700
+                        reload_delay: int = 500
         ) -> None:
         if not self.bot.player.canUseSkill(int(index)) or not self.bot.check_is_skill_safe(int(index)):
             return
