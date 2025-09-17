@@ -237,6 +237,7 @@ class Bot:
                 self.write_message(f"%xt%zm%resPlayerTimed%{self.areaId}%{self.username_id}%")
                 self.jump_cell(self.player.CELL, self.player.PAD)
                 self.player.ISDEAD = False
+                self.player.MANA = 100
                 continue
             # Execute a command
             if self.is_char_load_complete:

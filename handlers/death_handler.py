@@ -13,5 +13,6 @@ async def death_handler_task(bot: 'Bot'):
     else:
         bot.jump_cell(bot.player.CELL, bot.player.PAD)
     bot.player.ISDEAD = False
+    bot.player.MANA = 100
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Stopping death handler...")
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Spawned at cell:", bot.player.CELL, "pad:", bot.player.PAD)
