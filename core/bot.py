@@ -42,7 +42,8 @@ class Bot:
             soloClass: str = None,
             restartOnAFK: bool = True,
             autoAdjustSkillDelay: bool = False,
-            respawnCellPad: List[str] = None # format: "cell,pad"
+            respawnCellPad: List[str] = None, # format: "cell,pad"
+            muteSpamWarning: bool = False
             ):
         self.roomNumber = roomNumber
         self.showLog = showLog
@@ -58,6 +59,7 @@ class Bot:
         self.soloClass = soloClass
         self.restart_on_afk = restartOnAFK
         self.respawn_cell_pad = respawnCellPad
+        self.mute_spam_warning = muteSpamWarning
 
         self.auto_relogin = False # sementara diset ke False untuk cegah stop_bot() di function read_server_in_background()
         
@@ -715,7 +717,11 @@ class Bot:
             elif "warning" in msg:
                 msg = msg.split('%')
                 text = msg[4]
-                print(Fore.RED + f"[{datetime.now().strftime('%H:%M:%S')}] server warning: {text}" + Fore.WHITE)
+                if "Please slow down" in text:
+                    if self.mute_spam_warning == False:
+                        print(Fore.RED + f"[{datetime.now().strftime('%H:%M:%S')}] server warning: {text}" + Fore.WHITE)
+                else:
+                    print(Fore.RED + f"[{datetime.now().strftime('%H:%M:%S')}] server warning: {text}" + Fore.WHITE)                    
                 if "spamming the server" in text:
                     if self.auto_adjust_skill_delay:
                         self.skill_delay_ms += self.adjust_skill_delay_by_ms
@@ -942,20 +948,14 @@ class Bot:
                 "condition": lambda hp, threshold: hp < threshold
             },
             "archpaladin": {
-                "hp_threshold": 40,
-                "skills_to_check": [3],
+                "hp_threshold": 70,
+                "skills_to_check": [2],
                 "condition": lambda hp, threshold: hp > threshold
             },
         }
         # Get the class and its conditions
         equipped_class = self.player.get_equipped_item(ItemType.CLASS)
         if equipped_class:
-            current_mana = self.player.MANA
-            skillCost = self.player.SKILLS[skill]["mp"]*self.player.ManaCost
-            # Mana check 
-            if current_mana < skillCost:
-                # print(f"Not enough mana to use skill {skill}. Current mana: {current_mana}, Skill cost: {skillCost}")
-                return False
             if equipped_class.item_name in conditions:
                 condition = conditions[equipped_class.item_name]
                 current_hp = self.player.CURRENT_HP

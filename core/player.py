@@ -111,10 +111,19 @@ class Player:
         #     print(Fore.RED + f"skill: {skillNumber} cd: {cd_left:.2f} sec" + Fore.RESET)
         # else:
         #     print(Fore.GREEN + f"skill: {skillNumber} cd: {cd_left:.2f} sec" + Fore.RESET)
-            
-        if datetime.now() >= skills["nextUse"]:
-            return True
-        return False
+        
+        # Mana check 
+        current_mana = self.MANA
+        skillCost = skills["mp"]*self.ManaCost
+        if current_mana < skillCost:
+            print(f"skill:{skillNumber} cost:{skillCost} > current_mp:{current_mana}")
+            return False
+        
+        # Cooldown check 
+        if skills["nextUse"] > datetime.now():
+            return False
+        
+        return True
 
     def updateNextUse(self, skillNumber: int, delayms: int = 0) -> None:
         skills = self.SKILLS[skillNumber]
