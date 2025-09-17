@@ -102,21 +102,15 @@ class Player:
         return ["", 0]
     
     def canUseSkill(self, skillNumber: int):
-        if skillNumber > len(self.SKILLS):
+        if skillNumber >= len(self.SKILLS):
             return False
         skills = self.SKILLS[skillNumber]
-        
-        # cd_left = (int(skills['nextUse'].timestamp() * 1000) - int(round(datetime.now().timestamp() * 1000))) / 1000
-        # if cd_left > 0:
-        #     print(Fore.RED + f"skill: {skillNumber} cd: {cd_left:.2f} sec" + Fore.RESET)
-        # else:
-        #     print(Fore.GREEN + f"skill: {skillNumber} cd: {cd_left:.2f} sec" + Fore.RESET)
         
         # Mana check 
         current_mana = self.MANA
         skillCost = skills["mp"]*self.ManaCost
         if current_mana < skillCost:
-            print(f"skill:{skillNumber} cost:{skillCost} > current_mp:{current_mana}")
+            # print(f"skill:{skillNumber} cost:{skillCost} current_mp:{current_mana}")
             return False
         
         # Cooldown check 
@@ -125,44 +119,18 @@ class Player:
         
         return True
 
-    def updateNextUse(self, skillNumber: int, delayms: int = 0) -> None:
-        skills = self.SKILLS[skillNumber]
-        if delayms == 0:
-            cooldown = float(skills["cd"]) * (1 - self.CDREDUCTION)
-            self.SKILLS[skillNumber]["nextUse"] = datetime.now() + timedelta(milliseconds=cooldown)
-        else:
-            remaining = self.SKILLS[skillNumber]["nextUse"] - datetime.now()
-            if remaining.total_seconds() < 0:
-                remaining = timedelta(0)
-            self.SKILLS[skillNumber]["nextUse"] = datetime.now() + remaining + timedelta(milliseconds=delayms)
-
-    def getCooldown(self, skillNumber: int) -> float:
-        skills = self.SKILLS[skillNumber]
-        return float(skills["cd"]) * (1 - self.CDREDUCTION)
-
-    def updateTime(self, skillNumber: int, force_update: bool = False):
-        skill_detail = self.SKILLS[skillNumber]
-        cooldown = float(skill_detail["cd"]) * (1 - self.CDREDUCTION) + 200
-        self._update_skill_time(skillNumber, cooldown, force_update)
-
-    def delayAllSkills(self, except_skill: int, delay_ms: float = 1500):
-        """this is to delay skill to prevent server warning 'Please slow down'"""
-        if except_skill == 0:
-            return
-        for skill_number in range(len(self.SKILLS)):
-            if except_skill != skill_number:
-                skills = self.SKILLS[skill_number]
-                milliseconds = int(skills['nextUse'].timestamp() * 1000)
-                if milliseconds >= int(round(datetime.now().timestamp() * 1000)):
-                    return
-                else:
-                    self.updateNextUse(skill_number, delay_ms)
-    
-    def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):
-        new_cooldown_time = datetime.now() + timedelta(milliseconds=time_offset_ms)
-        if not self.SKILLUSED.get(skill_number) or self.SKILLUSED[skill_number] < new_cooldown_time or force_update:
-            self.SKILLUSED[skill_number] = new_cooldown_time
-            # print(f"set delay for skill: {skill_number}")
+    def updateNextUse(self, skillNumber: int) -> None:
+        skill = self.SKILLS[skillNumber]
+        
+        # set maximum CDR to 50%
+        cdr = min(self.CDREDUCTION, 0.5)
+        cd = skill["cd"]
+        effective_cd = cd * (1 - cdr)
+        
+        resultNextUse = (datetime.now() + timedelta(milliseconds=effective_cd))
+        skill["nextUse"] = resultNextUse
+        
+        # print(f"skill:{skillNumber} cd:{cd} cdr:{cdr * 100:.2f}% => result:{effective_cd:.2f}ms")
 
     def get_equipped_item(self, item_type: ItemType):
         for item in self.INVENTORY:

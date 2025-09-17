@@ -223,7 +223,7 @@ class Command:
                         target_monsters: str = "*", 
                         hunt: bool = False, 
                         buff_only: bool = False,
-                        reload_delay: int = 1000
+                        reload_delay: int = 700
         ) -> None:
         if not self.bot.player.canUseSkill(int(index)) or not self.bot.check_is_skill_safe(int(index)):
             return
@@ -232,10 +232,10 @@ class Command:
         self.bot.skillAnim = skill.get("anim", None)
         max_target = int(skill.get("tgtMax", 1))
         
-        cd_left = (self.skill_reload_time - int(round(datetime.now().timestamp() * 1000))) / 1000
-        if cd_left > 0:
-            # print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] wait reload skill:{index} cd:{cd_left:.2f} s" + Fore.RESET)
-            await self.sleep(cd_left)
+        wait_reload_s = (self.skill_reload_time - int(round(datetime.now().timestamp() * 1000))) / 1000
+        if wait_reload_s > 0 and index != 0:
+            # print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] wait reload skill:{index} cd:{wait_reload_s:.2f} s" + Fore.RESET)
+            await self.sleep(wait_reload_s*1000)
 
         if skill["tgt"] == "h": 
             priority_monsters_id = []
@@ -300,7 +300,7 @@ class Command:
             self.bot.use_skill_to_myself(index)
         
         await self.sleep(200)
-        self.bot.player.updateNextUse(index)
+        self.bot.player.updateNextUse(index) # do this if skills is REALLY exetuced
         self.bot.player.SKILLS[int(index)]["canUseSkill"] = False
     
         self.skill_reload_time = int(round(datetime.now().timestamp() * 1000)) + reload_delay
