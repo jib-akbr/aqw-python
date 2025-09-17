@@ -2,7 +2,7 @@
 title Temple Shrine Dungeon
 
 set PROJECT_PATH="D:\Python\aqw-python"
-set BOT_PATH=bot.templeshrine.midnightsun.bot_temple
+set BOT_PATH=bot.templeshrine.temple.bot_temple
 set USER_NAME=u
 set PASSWORD=p
 
