@@ -301,7 +301,6 @@ class Command:
         
         await self.sleep(200)
         self.bot.player.updateNextUse(index) # do this if skills is REALLY exetuced
-        self.bot.player.SKILLS[int(index)]["canUseSkill"] = False
     
         self.skill_reload_time = int(round(datetime.now().timestamp() * 1000)) + reload_delay
         # print(f"[{datetime.now().strftime('%H:%M:%S')}] use skill:{index}")

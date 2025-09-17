@@ -396,7 +396,6 @@ class Bot:
                         "strl" : skill.get("strl", "")
                     }
                     self.player.skills_ref[skill["ref"]] = anim_strl
-                    self.player.SKILLS[count_skill]["canUseSkill"] = True
                     self.player.SKILLS[count_skill]["nextUse"] = datetime.now()
                     count_skill += 1
                 # print(self.player.skills_ref)
@@ -504,7 +503,6 @@ class Bot:
                         "strl" : self.player.SKILLS[5]["strl"]
                     }
                 self.player.SKILLS[5]["ref"] = "i1"
-                self.player.SKILLS[5]["canUseSkill"] = True
                 self.player.SKILLS[5]["nextUse"] = datetime.now()
                 self.player.skills_ref["i1"] = anim_strl
                 # print(self.player.skills_ref)
