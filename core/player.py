@@ -101,23 +101,16 @@ class Player:
                 return [server["sIP"], server["iPort"]]
         return ["", 0]
     
-    def getNextUseSkill(self, skillNumber: int):
-        skills = self.SKILLS[skillNumber]
-        if datetime.now() > skills["nextUse"]:
-            return skills["nextUse"]
-        return None
-    
-    def canUseSkill(self, skillNumber):
+    def canUseSkill(self, skillNumber: int):
         if skillNumber > len(self.SKILLS):
             return False
         skills = self.SKILLS[skillNumber]
         
-        # milliseconds = int(skills['nextUse'].timestamp() * 1000)
-        # cd_left = milliseconds - int(round(datetime.now().timestamp() * 1000))    
+        # cd_left = (int(skills['nextUse'].timestamp() * 1000) - int(round(datetime.now().timestamp() * 1000))) / 1000
         # if cd_left > 0:
-        #     print(Fore.RED + f"skill: {skillNumber} cd: {cd_left}ms" + Fore.RESET)
+        #     print(Fore.RED + f"skill: {skillNumber} cd: {cd_left:.2f} sec" + Fore.RESET)
         # else:
-        #     print(Fore.GREEN + f"skill: {skillNumber} cd: {cd_left}ms" + Fore.RESET)
+        #     print(Fore.GREEN + f"skill: {skillNumber} cd: {cd_left:.2f} sec" + Fore.RESET)
             
         if datetime.now() >= skills["nextUse"]:
             return True
@@ -129,7 +122,10 @@ class Player:
             cooldown = float(skills["cd"]) * (1 - self.CDREDUCTION)
             self.SKILLS[skillNumber]["nextUse"] = datetime.now() + timedelta(milliseconds=cooldown)
         else:
-            self.SKILLS[skillNumber]["nextUse"] = datetime.now() + timedelta(milliseconds=delayms)
+            remaining = self.SKILLS[skillNumber]["nextUse"] - datetime.now()
+            if remaining.total_seconds() < 0:
+                remaining = timedelta(0)
+            self.SKILLS[skillNumber]["nextUse"] = datetime.now() + remaining + timedelta(milliseconds=delayms)
 
     def getCooldown(self, skillNumber: int) -> float:
         skills = self.SKILLS[skillNumber]
@@ -152,8 +148,6 @@ class Player:
                     return
                 else:
                     self.updateNextUse(skill_number, delay_ms)
-            # elif skill_number == except_skill:
-            #     self._update_skill_time(skill_number, float(500))
     
     def _update_skill_time(self, skill_number: int, time_offset_ms: float, force_update: bool = False):
         new_cooldown_time = datetime.now() + timedelta(milliseconds=time_offset_ms)
