@@ -1,8 +1,9 @@
 import asyncio
 from datetime import datetime
 from colorama import Fore
+# from core.bot import Bot
 
-async def death_handler_task(bot: 'Bot'):
+async def death_handler_task(bot: 'Bot'):# type: ignore
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Running death handler...")
     for i in range(11):
         await asyncio.sleep(1)

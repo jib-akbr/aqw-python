@@ -4,6 +4,7 @@ import commands as cmd
 import asyncio
 
 # Initialize bot
+login = input("Login (username,pass): ").split(",")
 b = Bot(
     roomNumber=None, 
     itemsDropWhiteList=[
@@ -23,7 +24,7 @@ b = Bot(
     showLog=True, 
     showDebug=False,
     showChat=True)
-b.set_login_info("u", "p", "yorumi")
+b.set_login_info(login[0], login[1], "yorumi")
 
 # Initialize variables
 private_room_number = 999999

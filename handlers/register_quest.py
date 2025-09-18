@@ -1,7 +1,8 @@
 
 import asyncio
+# from core.bot import Bot
 
-async def register_quest_task(bot: 'Bot'):
+async def register_quest_task(bot: 'Bot'):# type: ignore
     print("Running registered quests...")
     while bot.is_client_connected:
         for registered_quest_id in bot.registered_auto_quest_ids:

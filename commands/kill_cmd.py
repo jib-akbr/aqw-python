@@ -1,3 +1,4 @@
+from typing import List
 from core.bot import Bot
 from core.commands import Command
 from abstracts.base_command import BaseCommand
@@ -5,7 +6,7 @@ from commands import UseSkillCmd
 
 class KillCmd(BaseCommand):
     
-    def __init__(self, monsterName: []):
+    def __init__(self, monsterName: list[str]):
         self.monsterName = monsterName
     
     async def execute(self, bot: Bot, cmd: Command):

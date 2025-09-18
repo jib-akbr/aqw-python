@@ -27,7 +27,7 @@ async def main(cmd: Command):
     # await cmd.equip_item("Legion Revenant")
     await cmd.register_quest(4432)
 
-    skill_list = [0,1,2,0,3,4]
+    skill_list = [3,0,3,0,2,0,3,0,3,0,4,1]
     skill_index = 0
     while cmd.isStillConnected():
         if cmd.bot.follow_player != "" and cmd.bot.followed_player_cell != cmd.bot.player.CELL:
@@ -43,12 +43,14 @@ async def main(cmd: Command):
 if __name__ == "__main__":
     import asyncio
     login = input("Login (username,pass): ").split(",")
-    follow = input("player to follow: ")
+    # follow = input("player to follow: ")
+    follow = "onodera_san"
     bot = Bot(cmdDelay=600,
               showDebug=True,
               autoRelogin=True,
               followPlayer=follow,
-              isScriptable=True)  
+              isScriptable=True,
+              restartOnAFK=True)  
     # run = Command(bot) 
     
     bot.set_login_info(login[0], login[1],"Safiria")  # Set login info

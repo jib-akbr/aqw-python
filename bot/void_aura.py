@@ -164,10 +164,10 @@ if __name__ == "__main__":
     import asyncio
     bot = Bot(itemsDropWhiteList=whitelist,
               cmdDelay=600,
-              showDebug=True,
+              showDebug=False,
               autoRelogin=True,
               isScriptable=True)  
-    run = Command(bot) 
+    # run = Command(bot) 
     login = input("Login (username,pass): ").split(",")
     
     bot.set_login_info(login[0], login[1],"Safiria")  # Set login info

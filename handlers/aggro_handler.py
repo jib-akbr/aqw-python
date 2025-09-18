@@ -1,7 +1,8 @@
 import asyncio
 from colorama import Fore
+# from core.bot import Bot
 
-async def aggro_handler_task(bot: 'Bot'):
+async def aggro_handler_task(bot: 'Bot'): # type: ignore
     print("Running aggro handler...")
     #  %xt%zm%aggroMon%0%id%
     while bot.is_client_connected:

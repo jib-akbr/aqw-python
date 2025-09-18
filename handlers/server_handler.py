@@ -1,6 +1,6 @@
 import asyncio
-
-async def server_handler_task(bot: 'Bot'):
+# from core.bot import Bot
+async def server_handler_task(bot: 'Bot'):# type: ignore
     print("Running server handler...")
     while bot.is_client_connected:
         messages = bot.read_batch(bot.client_socket)

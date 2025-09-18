@@ -902,7 +902,7 @@ class Bot:
         self.write_message(f"%xt%zm%gar%1%0%{','.join(self.target)}%{self.scroll_id}%wvz%")
         
     def use_potion(self, potion_id):
-        self.target = [f"i1>p:{i}" for i in monsterid][:targetMax]
+        self.target = [f"i1>p:{i}" for i in monsterid][:targetMax]  # type: ignore NOT IMPLEMENTED YET
         self.write_message(f"%xt%zm%gar%1%0%i1>p:{self.user_id}%{potion_id}%wvz%")
 
     def use_skill_to_monster(self, skill, monsters_id, max_target):
