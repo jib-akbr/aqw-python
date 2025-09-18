@@ -62,6 +62,9 @@ class AscendEclipseBot:
 
     def print_debug(self, message, color=Fore.YELLOW):
         print(color + f"[{datetime.now().strftime('%H:%M:%S')}] [{self.cmd.bot.player.CELL}] {message}" + Fore.RESET)
+        
+    def print_aura(self, message):
+        self.print_debug(f"{Fore.RED}You got \"{message}\"{Fore.RESET}")
 
     async def prepare_items(self):
         minimalScroll = 50
@@ -124,9 +127,13 @@ class AscendEclipseBot:
             for aura in a_item.get("auras", []):
                 if self.cmd.bot.user_id in a_item.get("tInf", ""):
                     if aura.get("nam") == "Sun's Heat":
-                        self.print_debug(f"{Fore.RED}You got \"Sun's Heat\"{Fore.RESET}")
+                        self.print_aura("Sun's Heat")
                     if aura.get("nam") == "Moonlight Stun":
-                        self.print_debug(f"{Fore.RED}You got \"Moonlight Stun\"{Fore.RESET}")
+                        self.print_aura("Moonlight Stun")
+                    if aura.get("nam") == "Noon of Radiance":
+                        self.print_aura("Noon of Radiance")
+                    if aura.get("nam") == "Midnight of Silence":
+                        self.print_aura("Midnight of Silence")
                     # Create 5 seconds delayed taunt
                     if aura.get("nam") == "Sun's Warmth" and self.sunset_knight_taunter:
                         async def delayed_taunt():
@@ -134,7 +141,7 @@ class AscendEclipseBot:
                             self.taunt_target = "Sunset Knight"
                             self.do_taunt = True
                         asyncio.create_task(delayed_taunt())
-                    if aura.get("nam") == "Sun's Warmth" and self.moon_haze_taunter:
+                    if aura.get("nam") == "Moonlight Gaze" and self.moon_haze_taunter:
                         async def delayed_taunt():
                             await asyncio.sleep(5)
                             self.taunt_target = "Moon Haze"
@@ -184,8 +191,6 @@ class AscendEclipseBot:
         await self.cmd.send_packet(f"%xt%zm%gp%1%pa%{self.pid}%")
         await self.cmd.sleep(1000)
         
-        
-
     async def attack_loop(self):
         while self.cmd.isStillConnected():
             await self.cmd.sleep(200)
@@ -249,14 +254,12 @@ class EclipseMasterBot(AscendEclipseBot):
         super().__init__(cmd, role="master", **kwargs)
         self.timeleapse = 0
         self.cleared_count = 0
-        self.deerHp = 100
         
     async def to_next_cell(self):
         self.do_taunt = False
         self.stop_attack = False
         self.converges_count = 0
         self.light_gather_count = 0
-        self.deerHp = 100
 
         # reset to "Enter"
         if self.cmd.bot.player.CELL != "Enter":
@@ -264,7 +267,7 @@ class EclipseMasterBot(AscendEclipseBot):
             for slave in self.cmd.bot.slaves_player:
                 player = self.cmd.get_player_in_map(slave)
                 if player:
-                    self.print_debug(f"Waiting for {slave} - Cell: {player.str_frame}, State: {player.int_state}, HP: {player.int_hp}")
+                    self.print_debug(f"Waiting for:{slave} Cell:{player.str_frame} State:{player.int_state} HP:{player.int_hp}")
                     while player.str_frame != self.cmd.bot.player.CELL or player.int_state == 0:
                         await self.cmd.sleep(100)
                         player = self.cmd.get_player_in_map(slave)

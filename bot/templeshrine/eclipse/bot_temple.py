@@ -6,7 +6,15 @@ from colorama import Fore
 
 from core.commands import Command
 
-server = "yokai (sea)"
+# Requirement:
+# a lot of "Scroll of Enrage", minimal 50
+# 1 taunt_parity="odd" for each converge_type "sun" and "moon"
+# 1 taunt_parity="even" for each converge_type "sun" and "moon"
+# 2 light_gather_taunter    (tanky class)
+# 1 moon_haze_taunter       
+# 1 sunset_knight_taunter
+
+server = "safiria"
 slaves = [
     SlaveConfig("username",
                 "password",
@@ -74,6 +82,7 @@ b = Bot(
     slavesPlayer=[slave.username for i, slave in enumerate(slaves) if i != 0],
     farmClass=selected_slave.char_class,
     respawnCellPad=["Enter", "Spawn"],
+    muteSpamWarning=True
 )
 b.set_login_info(selected_slave.username, selected_slave.password, server)
 
