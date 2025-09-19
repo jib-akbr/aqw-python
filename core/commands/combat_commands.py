@@ -3,19 +3,38 @@ from datetime import datetime
 from core.commands.base import _CommandBase, check_alive
 from model.inventory import ItemType
 from model.monster import Monster
+from typing import Optional
     
 class CombatCommands(_CommandBase):
     """Combat utilities such as skills and aggro management."""
     skill_reload_time: int = 0
 
     @check_alive
-    async def leave_combat(self, safeLeave: bool = True) -> bool:
+    async def leave_combat(self, safeLeave: bool = True) -> None:
+        """Leave combat and optionally jump back to spawn.
+
+        Args:
+            safeLeave (bool): Jump to the Enter/Spawn cell after leaving combat when True.
+
+        Returns:
+            None: Always returns None; the bot actions run asynchronously.
+        """
         await self.bot.ensure_leave_from_combat(always=True)
         if safeLeave:
             await self.jump_cell("Enter", "Spawn")
 
     @check_alive
     async def jump_to_monster(self, monsterName: str, byMostMonster: bool = True, byAliveMonster: bool = False) -> None:
+        """Jump to the cell that currently hosts the requested monster.
+
+        Args:
+            monsterName (str): Display name or ``id.X`` identifier for the monster.
+            byMostMonster (bool): Prefer the cell with the highest monster population when True.
+            byAliveMonster (bool): Prefer a cell that still has the monster alive when True.
+
+        Returns:
+            None: The coroutine adjusts player position and exits.
+        """
         if monsterName.startswith('id.'):
             monsterName = monsterName.split('.')[1]
         for monster in self.bot.monsters:
@@ -43,12 +62,29 @@ class CombatCommands(_CommandBase):
                 return
 
     @check_alive
-    async def wait_use_skill(self, index: int, target_monsters: str = "*"):
+    async def wait_use_skill(self, index: int, target_monsters: str = "*") -> None:
+        """Wait until a skill is ready before casting it.
+
+        Args:
+            index (int): Skill slot to trigger.
+            target_monsters (str): Comma-separated monster names or ``id.X`` identifiers to focus.
+
+        Returns:
+            None: The coroutine finishes once the skill has been used.
+        """
         while not self.bot.player.canUseSkill(int(index)):
             await self.sleep(100)
         await self.use_skill(index, target_monsters)
         
-    def check_is_skill_safe(self, skill: int):
+    def check_is_skill_safe(self, skill: int) -> bool:
+        """Return whether a skill is safe to use at the current HP threshold.
+
+        Args:
+            skill (int): Skill slot that is about to be executed.
+
+        Returns:
+            bool: True when the skill can be used safely for the equipped class.
+        """
         conditions = {
             "void highlord": {
                 "hp_threshold": 50, # in percentage of current hp from max hp
@@ -91,6 +127,18 @@ class CombatCommands(_CommandBase):
                         buff_only: bool = False,
                         reload_delay: int = 500
         ) -> None:
+        """Execute a skill with optional hunting, targeting, and cooldown handling.
+
+        Args:
+            index (int): Skill slot that should be triggered.
+            target_monsters (str): Target filter, ``*`` for any or comma-separated list.
+            hunt (bool): When True, jump to the monster before casting.
+            buff_only (bool): Prevent damaging skills from firing when True.
+            reload_delay (int): Cooldown buffer in milliseconds after casting.
+
+        Returns:
+            None: The coroutine schedules the skill usage and exits.
+        """
         if not self.bot.player.canUseSkill(int(index)) or not self.check_is_skill_safe(int(index)):
             return
 
@@ -171,11 +219,28 @@ class CombatCommands(_CommandBase):
         self.skill_reload_time = int(round(datetime.now().timestamp() * 1000)) + reload_delay
 
     @check_alive
-    def do_pwd(self, monster_id: str):
+    def do_pwd(self, monster_id: str) -> None:
+        """Send a raw PWD packet to the server for a specific monster.
+
+        Args:
+            monster_id (str): Monster identifier to include in the packet payload.
+
+        Returns:
+            None: The message is sent and no value is returned.
+        """
         # %xt%zm%gar%1%3%p6>m:1%wvz%
         self.bot.write_message(f"%xt%zm%gar%1%3%p6>m:{monster_id}%wvz%")
 
-    def start_aggro_by_cell(self, cells: list[str], delay_ms : int = 500):
+    def start_aggro_by_cell(self, cells: list[str], delay_ms : int = 500) -> None:
+        """Start aggroing every monster found in the provided cells.
+
+        Args:
+            cells (list[str]): Cell names to scan for monsters.
+            delay_ms (int): Delay between aggro commands in milliseconds.
+
+        Returns:
+            None: Delegates to start_aggro when monsters are present.
+        """
         mons_id: list[str] = []
         for monster in self.bot.monsters:
             if monster.frame in cells:
@@ -186,18 +251,40 @@ class CombatCommands(_CommandBase):
         
         self.start_aggro(mons_id, delay_ms)
 
-    def start_aggro(self, mons_id: list[str], delay_ms: int = 500):
+    def start_aggro(self, mons_id: list[str], delay_ms: int = 500) -> None:
+        """Enable the aggro handler for the supplied monster identifiers.
+
+        Args:
+            mons_id (list[str]): Monster identifiers to keep aggroed.
+            delay_ms (int): Delay between aggro ticks in milliseconds.
+
+        Returns:
+            None: Updates the bot state and starts the aggro task.
+        """
         self.stop_aggro()
         self.bot.is_aggro_handler_task_running = True
         self.bot.aggro_mons_id = mons_id
         self.bot.aggro_delay_ms = delay_ms
         self.bot.run_aggro_hadler_task()
 
-    def stop_aggro(self):
+    def stop_aggro(self) -> None:
+        """Stop the aggro handler and clear tracked monsters.
+
+        Returns:
+            None: Clears aggro state without returning a value.
+        """
         self.bot.is_aggro_handler_task_running = False
         self.bot.aggro_mons_id = []
 
     def is_monster_alive(self, monster: str = "*") -> bool:
+        """Check whether a monster is alive in the player's current cell.
+
+        Args:
+            monster (str): Name or ``id.X`` identifier of the monster, ``*`` for any.
+
+        Returns:
+            bool: True when a matching live monster is found in the cell.
+        """
         if monster.startswith('id.'):
             monster = monster.split('.')[1]
         for mon in self.bot.monsters:
@@ -210,6 +297,14 @@ class CombatCommands(_CommandBase):
 
     @check_alive
     def get_monster_hp(self, monster: str) -> int:
+        """Get the current HP of the requested monster.
+
+        Args:
+            monster (str): Name or ``id.X`` identifier of the monster, ``*`` for any.
+
+        Returns:
+            int: Current HP, or -1 when the monster is not found.
+        """
         if monster == None:
             return -1
         if monster.startswith('id.'):
@@ -223,6 +318,14 @@ class CombatCommands(_CommandBase):
         return -1
 
     def get_monster_hp_percentage(self, monster: str) -> int:
+        """Get the remaining HP of a monster as a percentage.
+
+        Args:
+            monster (str): Name or ``id.X`` identifier of the monster, ``*`` for any.
+
+        Returns:
+            int: Rounded HP percentage, or -1 when the monster is missing.
+        """
         if monster.startswith('id.'):
             monster = monster.split('.')[1]
         for mon in self.bot.monsters:
@@ -233,7 +336,15 @@ class CombatCommands(_CommandBase):
         # this mean not get the desired monster
         return -1
 
-    def get_monster(self, monster: str) -> Monster:
+    def get_monster(self, monster: str) -> Optional[Monster]:
+        """Return the monster object that matches the provided identifier.
+
+        Args:
+            monster (str): Name or ``id.X`` identifier of the monster.
+
+        Returns:
+            Monster or None: Monster instance when found, otherwise None.
+        """
         if monster.startswith('id.'):
             monster = monster.split('.')[1]
         for mon in self.bot.monsters:
@@ -242,5 +353,13 @@ class CombatCommands(_CommandBase):
         return None
 
     @check_alive
-    def hp_below_percentage(self, percent: int):
+    def hp_below_percentage(self, percent: int) -> bool:
+        """Check if the player HP is below the requested percentage.
+
+        Args:
+            percent (int): HP threshold to compare against.
+
+        Returns:
+            bool: True when the player HP percentage is lower than the threshold.
+        """
         return ((self.bot.player.CURRENT_HP / self.bot.player.MAX_HP) * 100) < percent
