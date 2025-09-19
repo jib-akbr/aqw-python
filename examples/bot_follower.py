@@ -1,5 +1,5 @@
 from core.bot import Bot
-from templates.attack import generalAttack
+from templates.attack import csh
 import commands as cmd
 import asyncio
 
@@ -30,10 +30,11 @@ b.set_login_info("u", "p", "alteon")
 b.add_cmds([
         cmd.RegisterQuestCmd(4432),
         cmd.LabelCmd("ATK"),
-        *generalAttack,
+        *csh,
         cmd.ToLabelCmd("ATK"),
         cmd.StopBotCmd()
     ])
 
 # Start bot
+
 asyncio.run(b.start_bot())

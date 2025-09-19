@@ -126,7 +126,8 @@ def hunt_item_cmds(
         # Check is item in bank
         cmd.IsInBankCmd(item_name),
         cmd.BankToInvCmd(item_name),
-        
+        cmd.start_aggro_cmd,
+
         # Check is item qty already fullfiled
         cmd.IsInInvCmd(item_name, item_qty, operator=">="),
         cmd.ToLabelCmd(label_done),
@@ -145,8 +146,8 @@ def hunt_item_cmds(
         *attack(monster_name),
         cmd.ToLabelCmd(lebel_farming),
         
-        cmd.LabelCmd(label_done),
-        cmd.SleepCmd(1000)
+        cmd.SleepCmd(1000),
+        cmd.LabelCmd(label_done)
     ]
 
 def hunt_monster_quest_temp_item(

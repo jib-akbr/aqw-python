@@ -4,7 +4,7 @@ from templates.hunt import hunt_item
 
 async def main(cmd: Command):
 
-    await cmd.join_map("whitemap")
+    # await cmd.join_map("whitemap")
 
     item_list = [
         "Astral Ephemerite Essence",
@@ -34,7 +34,7 @@ async def main(cmd: Command):
             await cmd.bot.goto_player(cmd.bot.follow_player)
             await cmd.sleep(1000)
             continue 
-        await cmd.use_skill(skill_list[skill_index])
+        await cmd.wait_use_skill(skill_list[skill_index])
         skill_index += 1
         if skill_index >= len(skill_list):
             skill_index = 0

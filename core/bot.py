@@ -22,7 +22,7 @@ from model import ItemInventory, ItemType, Faction, PlayerArea
 from handlers import register_quest_task, death_handler_task, aggro_handler_task
 import time
 import traceback
-init(autoreset=True, convert=True) 
+init(autoreset=True, convert=False) 
     
 class Bot:
 

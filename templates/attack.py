@@ -28,6 +28,15 @@ generalAttack = [
     skillCmd.createSkill(4),
 ]
 
+csh = [
+    cmd.UseSkillCmd(3,"*"),
+    cmd.UseSkillCmd(0,"*"),
+    cmd.auraCmd("Rounds Empty"),
+    cmd.UpIndexCmd(3),
+    cmd.UseSkillCmd(4,"*",wait=True),
+    cmd.UseSkillCmd(1,"*",wait=True),
+]
+
 def attack_monster(monster_name: str = "*"):
     return [
         skillCmd.createSkill(0, monster_name),
