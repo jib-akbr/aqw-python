@@ -26,7 +26,7 @@ async def revenant_spellscroll(cmd: Command, qty: int = 20):
     ]
 
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
 
@@ -73,7 +73,7 @@ async def conquest_wreath(cmd: Command, qty: int = 6):
         {"item_name": "Doomwood Cohort Conquered", "qty": 400, "map_name": "doomwood", "cell": "r6", "pad": "Right", "is_solo": False},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
 
@@ -107,7 +107,7 @@ async def exalted_crown(cmd: Command, qty: int = 10):
 
     cmd.farming_logger(item_name, qty)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
 
@@ -154,7 +154,7 @@ async def get_emblem_of_dage(cmd: Command, qty: int = 1):
         return
     await cmd.bank_to_inv("Legion Round 4 Medal")
     if not cmd.is_in_inventory("Legion Round 4 Medal"):
-        cmd.stopBot("Required : Legion Round 4 Medal in inventory")
+        cmd.stop_bot("Required : Legion Round 4 Medal in inventory")
     
     cmd.add_drop(item)
     cmd.farming_logger(item, qty)
@@ -203,7 +203,7 @@ async def get_diamond_token_of_dage(cmd: Command, qty: int = 30):
 
     cmd.farming_logger(item, qty)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item, qty, ">="):
             break
 
@@ -228,12 +228,12 @@ async def get_dark_token(cmd: Command, qty: int = 100):
     skill_index = 0
     skill_list = [0,1,2,0,3,4]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item, qty, ">="):
             break
 
         for q in [6248, 6249]:
-            if cmd.quest_not_in_progress(q):
+            if cmd.is_quest_not_in_progress(q):
                 await cmd.accept_quest(q)
             if cmd.can_turnin_quest(q):
                 await cmd.turn_in_quest(q)
@@ -258,11 +258,11 @@ async def get_leto_ssp(cmd: Command, qty: int = 4000):
     skill_index = 0
     skill_list = [0,1,2,0,3,4]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
 
-        if cmd.quest_not_in_progress(5755):
+        if cmd.is_quest_not_in_progress(5755):
             await cmd.accept_quest(5755)
         if cmd.can_turnin_quest(5755):
             await cmd.turn_in_quest(5755)
@@ -276,15 +276,15 @@ async def get_leto_ssp(cmd: Command, qty: int = 4000):
 
 async def farm_mats(cmd: Command, item_to_farm: list[dict]):
     for item in item_to_farm:
-        if not cmd.isStillConnected():
+        if not cmd.is_still_connected():
             return
         is_solo = item.get("is_solo", False)
         if is_solo:
-            solo_class = cmd.getSoloClass()
+            solo_class = cmd.get_solo_class()
             if solo_class:
                 await cmd.equip_item(solo_class)
         else:
-            farm_class = cmd.getFarmClass()
+            farm_class = cmd.get_farm_class()
             if farm_class:
                 await cmd.equip_item(farm_class)
         if item["map_name"] == "revenant":
