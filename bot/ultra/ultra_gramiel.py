@@ -64,7 +64,7 @@ async def main(cmd: Command):
         priority = ["id.3", "id.2"]
 
     for prio in priority:
-        while cmd.is_monster_alive(prio) and cmd.isStillConnected():
+        while cmd.is_monster_alive(prio) and cmd.is_still_connected():
             mons_hp = cmd.get_monster_hp(prio)
             if mons_hp > -1:
                 print(f"{prio}: {mons_hp} : {cmd.get_monster_hp_percentage(prio)}%")
@@ -85,7 +85,7 @@ async def main(cmd: Command):
     if equipped_class == taunter_list[taunter_index]:
         wait_taunt = True
         taunt_date = datetime.now()
-    while cmd.is_monster_alive("Gramiel The Graceful") and cmd.isStillConnected():
+    while cmd.is_monster_alive("Gramiel The Graceful") and cmd.is_still_connected():
         mons_hp = cmd.get_monster_hp("Gramiel The Graceful")
         if mons_hp > -1:
             print(f"Gramiel The Graceful: {mons_hp} : {cmd.get_monster_hp_percentage('Gramiel The Graceful')}%")
@@ -114,7 +114,7 @@ async def main(cmd: Command):
     while cmd.is_not_in_map("whitemap"):
         await cmd.join_map("whitemap", private_room_number)
         await cmd.sleep(1000)
-    cmd.stopBot("finished Gramiel The Graceful")
+    cmd.stop_bot("finished Gramiel The Graceful")
 
 def message_handler(message):
     global LTaunt, RTaunt, LTauntClass, RTauntClass, force_taunt, cmdGlobal, taunter_list, taunter_index, wait_taunt, taunt_date

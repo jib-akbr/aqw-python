@@ -49,7 +49,7 @@ async def main(cmd: Command):
 
     cmd.start_aggro_by_cell("h90")
     
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
 
         await cmd.use_skill(skill_list[skill_index], target_monsters="id.32,id.33,id.34")
         skill_index += 1
@@ -87,7 +87,7 @@ async def main(cmd: Command):
             await cmd.join_map("evilmarsh", 999999)
             await cmd.sleep(1000)
             await cmd.jump_cell("Field1", "Left")
-            while not cmd.is_in_inventory("Dark Makai Rune", isTemp=True) and cmd.isStillConnected():
+            while not cmd.is_in_inventory("Dark Makai Rune", isTemp=True) and cmd.is_still_connected():
                 await cmd.use_skill(skill_list[skill_index], target_monsters="Dark Makai")
                 skill_index += 1
                 if skill_index >= len(skill_list):

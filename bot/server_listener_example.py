@@ -28,7 +28,7 @@ async def main(bot: Bot):
 
     bot.subscribe(message_handler)
 
-    while cmd.is_monster_alive("The First Speaker") and cmd.isStillConnected():
+    while cmd.is_monster_alive("The First Speaker") and cmd.is_still_connected():
         mons_hp = cmd.get_monster_hp("The First Speaker")
         print("my hp:", cmd.bot.player.CURRENT_HP,"/", cmd.bot.player.MAX_HP)
         if mons_hp > -1:

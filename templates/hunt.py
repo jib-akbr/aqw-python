@@ -43,7 +43,7 @@ async def hunt_item(
     skill_list = skill_list
     skill_index = 0
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, item_qty, operator=">=") or cmd.is_in_inventory(item_name, item_qty, operator=">=", isTemp=True):
             await cmd.leave_combat()
             break
@@ -78,7 +78,7 @@ async def kill_quest(
     
     await cmd.jump_to_monster(monster_name)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.can_turnin_quest(quest_id):
             await cmd.leave_combat()
             await cmd.ensure_turn_in_quest(quest_id)
@@ -90,7 +90,7 @@ async def quest_item_req(cmd: Command, map_name: str, item_name: str, qty: int =
     if cmd.is_not_in_map(map_name):
         await cmd.join_map(map_name)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, operator=">=", isTemp=is_temp):
             cmd.leave_combat()
             return

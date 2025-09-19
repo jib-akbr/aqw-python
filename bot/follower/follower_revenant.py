@@ -22,14 +22,14 @@ async def main(cmd: Command):
 
     cmd.bot.subscribe(message_handler)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if is_locked_zone:
             await cmd.join_map(list_maps[index_count])
             is_locked_zone = False
             index_count = (index_count + 1) % len(list_maps)
             await cmd.sleep(1000)
         if cmd.bot.follow_player != "" and cmd.bot.followed_player_cell != cmd.bot.player.CELL:
-            await cmd.bot.goto_player(cmd.bot.follow_player)
+            await cmd.goto_player(cmd.bot.follow_player)
             await cmd.sleep(1000)
             continue 
         await cmd.use_skill(skill_list[skill_index])
