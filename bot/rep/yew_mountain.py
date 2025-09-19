@@ -33,7 +33,7 @@ async def main(cmd: Command):
     # await cmd.register_quest(10357)
     await cmd.register_quest(10358)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         await do_farm_tasks(cmd, item_to_farm)
         complete_count = complete_count + 1
         print(Fore.GREEN + f"Complete count : {complete_count}" + Fore.RESET)

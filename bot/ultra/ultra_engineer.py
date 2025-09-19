@@ -18,7 +18,7 @@ async def main(cmd: Command):
 
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
-    while cmd.is_monster_alive("Ultra Engineer") and cmd.isStillConnected():
+    while cmd.is_monster_alive("Ultra Engineer") and cmd.is_still_connected():
         if cmd.hp_below_percentage(60):
             equipped_class = cmd.get_equipped_class()
             if equipped_class:

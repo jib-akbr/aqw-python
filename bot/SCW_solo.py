@@ -22,7 +22,7 @@ async def main(cmd: Command):
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
 
         await cmd.use_skill(skill_list[skill_index])
         skill_index += 1

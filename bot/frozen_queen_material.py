@@ -12,7 +12,7 @@ async def main(bot: Bot):
 
     # shop = cmd.get_loaded_shop(2507)
     # if not shop:
-    #     cmd.stopBot(f"shop id 2507 not loaded")
+    #     cmd.stop_bot(f"shop id 2507 not loaded")
     #     return
     # print("LOADED")
     # for item in shop.items:
@@ -22,7 +22,7 @@ async def main(bot: Bot):
     await FrozenSpiderSilk(bot, cmd, 130)
     await IceVapor(bot, cmd, 32)
 
-    cmd.stopBot("DONE FARMING 130 Frozen SpiderSilk and 32 Ice Vapor")
+    cmd.stop_bot("DONE FARMING 130 Frozen SpiderSilk and 32 Ice Vapor")
 
 async def FrozenSpiderSilk(bot: Bot, cmd: Command, qty: int):
     item_name = "Frozen SpiderSilk"
@@ -34,7 +34,7 @@ async def FrozenSpiderSilk(bot: Bot, cmd: Command, qty: int):
 
     await cmd.register_quest(10018)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
 
@@ -57,7 +57,7 @@ async def IceVapor(bot: Bot, cmd: Command, qty: int):
     if bot.farmClass:
         await cmd.equip_item(bot.farmClass)
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
 

@@ -18,4 +18,4 @@ async def main(bot: Bot):
     )
 
     await cmd.join_map("battleon")
-    cmd.stopBot()
+    cmd.stop_bot()

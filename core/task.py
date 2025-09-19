@@ -1,4 +1,3 @@
-from core.bot import Bot
 from core.commands import Command
 from templates.hunt import hunt_item
 from dataclasses import dataclass
@@ -14,13 +13,13 @@ class FarmTask:
     
 async def do_farm_tasks(cmd: Command, tasks: list[FarmTask]):
     for task in tasks:
-        if not cmd.isStillConnected():
+        if not cmd.is_still_connected():
             return
 
         if task.is_solo:
-            class_to_equip = cmd.getSoloClass()
+            class_to_equip = cmd.get_solo_class()
         else:
-            class_to_equip = cmd.getFarmClass()
+            class_to_equip = cmd.get_farm_class()
 
         if class_to_equip:
             await cmd.equip_item(class_to_equip)

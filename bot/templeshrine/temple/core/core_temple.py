@@ -31,7 +31,7 @@ class CoreTempleBot:
 
     def print_debug(self, message):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] "
-              f"[{self.cmd.bot.player.CELL}] {Fore.YELLOW}{message}{Fore.RESET}")
+              f"[{self.cmd.get_player.CELL}] {Fore.YELLOW}{message}{Fore.RESET}")
 
     def msg_handler(self, message):
         if not message or not is_valid_json(message):
@@ -91,13 +91,13 @@ class CoreTempleBot:
         self.print_debug("Moving to next cell...")
         await self.cmd.sleep(2000)
 
-        if self.cmd.bot.player.CELL == "Enter" and not self.cmd.is_monster_alive():
+        if self.cmd.get_player.CELL == "Enter" and not self.cmd.is_monster_alive():
             await self.cmd.jump_cell("r1", "Left")
-        elif self.cmd.bot.player.CELL == "r1" and not self.cmd.is_monster_alive():
+        elif self.cmd.get_player.CELL == "r1" and not self.cmd.is_monster_alive():
             await self.cmd.jump_cell("r2", "Left")
-        elif self.cmd.bot.player.CELL == "r2" and not self.cmd.is_monster_alive():
+        elif self.cmd.get_player.CELL == "r2" and not self.cmd.is_monster_alive():
             await self.cmd.jump_cell("r3", "Left")
-        elif self.cmd.bot.player.CELL == "r3" and not self.cmd.is_monster_alive():
+        elif self.cmd.get_player.CELL == "r3" and not self.cmd.is_monster_alive():
             elapsed_seconds = time.monotonic() - self.timeleapse
             minutes = int(elapsed_seconds // 60)
             seconds = int(elapsed_seconds % 60)
@@ -129,7 +129,7 @@ class CoreTempleBot:
 
     async def go_to_master(self):
         self.print_debug(f"Going to master's place...")
-        await self.cmd.bot.goto_player(self.cmd.bot.follow_player)
+        await self.cmd.goto_player(self.cmd.bot.follow_player)
         await self.cmd.sleep(1000)
 
     async def wait_party_invite(self):
@@ -143,7 +143,7 @@ class CoreTempleBot:
 
     async def attack_loop(self):
         buff_only = False
-        while self.cmd.isStillConnected():
+        while self.cmd.is_still_connected():
             if self.role == "master":
                 await self.to_next_cell()
             if self.role == "slave":
@@ -151,9 +151,9 @@ class CoreTempleBot:
 
             master = self.cmd.get_player_in_map(self.cmd.bot.follow_player)
             check_master_in_cell = self.role == "master" or (
-                master and master.str_frame == self.cmd.bot.player.CELL
+                master and master.str_frame == self.cmd.get_player.CELL
             )
-            while self.cmd.is_monster_alive() and check_master_in_cell and self.cmd.isStillConnected():
+            while self.cmd.is_monster_alive() and check_master_in_cell and self.cmd.is_still_connected():
                 if not self.is_attacking:
                     self.print_debug("Attacking monsters...")
                     self.is_attacking = True
@@ -167,7 +167,7 @@ class CoreTempleBot:
                     await self.cmd.sleep(200)
                     continue
 
-                buff_only = self.cmd.bot.player.hasAura("Sun's Heat")
+                buff_only = self.cmd.get_player.hasAura("Sun's Heat")
                 await self.cmd.use_skill(
                     self.skill_list[self.skill_index],
                     target_monsters=self.target_monsters,
@@ -179,7 +179,7 @@ class CoreTempleBot:
             self.is_attacking = False
 
     async def start(self):
-        await self.cmd.equip_item(self.cmd.getFarmClass())
+        await self.cmd.equip_item(self.cmd.get_farm_class())
         if self.is_taunter:
             await self.cmd.equip_scroll("Scroll of Enrage")
 
