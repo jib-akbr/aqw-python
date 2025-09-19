@@ -22,7 +22,7 @@ async def main(bot: Bot):
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
     counter = 0
-    while cmd.is_in_inventory(item_name, item_qty, "<") and cmd.isStillConnected():
+    while cmd.is_in_inventory(item_name, item_qty, "<") and cmd.is_still_connected():
         if counter >= 100:
             cmd.farming_logger(item_name, item_qty)
             counter = 0

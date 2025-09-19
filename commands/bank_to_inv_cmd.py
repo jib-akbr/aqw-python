@@ -1,4 +1,4 @@
-from typing import List, Union
+﻿from typing import List, Union
 from core.bot import Bot
 from core.commands import Command
 from abstracts.base_command import BaseCommand

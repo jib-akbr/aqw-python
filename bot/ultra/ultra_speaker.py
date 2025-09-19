@@ -1,4 +1,4 @@
-import json
+﻿import json
 from core.bot import Bot
 from core.commands import Command
 from colorama import Fore
@@ -80,7 +80,7 @@ async def main(cmd: Command):
         skill_list = [0,1,2,0,3,4]
     skill_index = 0
 
-    # asyncio.create_task(message_handler(cmd.bot=cmd.bot))
+    # asyncio.create_task(message_handler(cmd=cmd))
     cmd.bot.subscribe(message_handler)
     equipped_class = cmd.get_equipped_class().item_name.lower()
 
@@ -88,7 +88,7 @@ async def main(cmd: Command):
 
     start_time = time.time()
 
-    while cmd.is_monster_alive("The First Speaker") and cmd.isStillConnected():
+    while cmd.is_monster_alive("The First Speaker") and cmd.is_still_connected():
         mons_hp = cmd.get_monster_hp("The First Speaker")
         counter += 1
         if mons_hp > 9_990_000:

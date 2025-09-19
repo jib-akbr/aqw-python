@@ -1,4 +1,3 @@
-from core.bot import Bot
 from core.commands import Command
 
 """
@@ -19,9 +18,8 @@ public void BuyItem(string map, int shopID, int itemID, int quant = 1, int shopQ
 """
 
 
-async def PotentHonorMalice(bot: Bot, cmd: Command, qty: int = 300):
+async def PotentHonorMalice(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Potent Honor Potion",
         ["Chaoroot", "Chaos Entity"],
@@ -30,7 +28,6 @@ async def PotentHonorMalice(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
     await craft_potion(
-        bot,
         cmd,
         "Potent Malice Potion",
         ["Chaoroot", "Chaos Entity"],
@@ -39,7 +36,7 @@ async def PotentHonorMalice(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def BodyTonic(bot: Bot, cmd: Command, qty: int = 300):
+async def BodyTonic(cmd: Command, qty: int = 300):
     # await craft_potion(
     #     bot,
     #     cmd,
@@ -54,9 +51,8 @@ async def BodyTonic(bot: Bot, cmd: Command, qty: int = 300):
     # need to make buy reagent by shop item id
     return
 
-async def FateTonic(bot: Bot, cmd: Command, qty: int = 300):
+async def FateTonic(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Fate Tonic",
         ["Dried Slime", "Arashtite Ore"],
@@ -65,9 +61,8 @@ async def FateTonic(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def MightTonic(bot: Bot, cmd: Command, qty: int = 300):
+async def MightTonic(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Might Tonic",
         ["Chaos Entity", "Rhison Blood"],
@@ -76,9 +71,8 @@ async def MightTonic(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def PotentDestructionElixir(bot: Bot, cmd: Command, qty: int = 300):
+async def PotentDestructionElixir(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Potent Destruction Elixir",
         ["Dried Slime", "Arashtite Ore"],
@@ -87,9 +81,8 @@ async def PotentDestructionElixir(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def PotentBattleElixir(bot: Bot, cmd: Command, qty: int = 300):
+async def PotentBattleElixir(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Potent Battle Elixir",
         ["Chaoroot", "Doomatter"],
@@ -98,9 +91,8 @@ async def PotentBattleElixir(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def PotentMalevolence(bot: Bot, cmd: Command, qty: int = 300):
+async def PotentMalevolence(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Potent Malevolence Elixir",
         ["Chaoroot", "Doomatter"],
@@ -109,9 +101,8 @@ async def PotentMalevolence(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def PotentRevitalizeElixir(bot: Bot, cmd: Command, qty: int = 300):
+async def PotentRevitalizeElixir(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Potent Revitalize Elixir",
         ["Chaoroot", "Lemurphant Tears"],
@@ -120,9 +111,8 @@ async def PotentRevitalizeElixir(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def SageTonic(bot: Bot, cmd: Command, qty: int = 300):
+async def SageTonic(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "Sage Tonic",
         ["Dried Slime", "Arashtite Ore"],
@@ -131,9 +121,8 @@ async def SageTonic(bot: Bot, cmd: Command, qty: int = 300):
         qty
     )
 
-async def template(bot: Bot, cmd: Command, qty: int = 300):
+async def template(cmd: Command, qty: int = 300):
     await craft_potion(
-        bot,
         cmd,
         "potion",
         ["ragent1", "reagent2"],
@@ -143,7 +132,6 @@ async def template(bot: Bot, cmd: Command, qty: int = 300):
     )
 
 async def craft_potion(
-    bot: Bot,
     cmd: Command,
     potion_name: str,
     reagents: list[str],
@@ -160,7 +148,7 @@ async def craft_potion(
         print(f"DONE {potion_name}")
         return
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.get_quant_item(potion_name) >= qty:
             print(f"DONE {potion_name}")
             return
@@ -171,7 +159,7 @@ async def craft_potion(
 
         await cmd.join_map("alchemy", 99999999)
 
-        while cmd.isStillConnected():
+        while cmd.is_still_connected():
             if cmd.get_quant_item(potion_name) >= qty:
                 return
             if any(cmd.get_quant_item(reagent) < 1 for reagent in reagents):
@@ -180,12 +168,12 @@ async def craft_potion(
             print()
 
             print(f"Trying to make {potion_name}")
-            bot.write_message(packets[0])
+            cmd.bot.write_message(packets[0])
 
             print("Waiting for 12s")
             await cmd.sleep(12000)
 
-            bot.write_message(packets[1])
+            cmd.bot.write_message(packets[1])
             await cmd.sleep(1000)
             print(f"{potion_name} made")
 

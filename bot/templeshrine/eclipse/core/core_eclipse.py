@@ -69,9 +69,9 @@ class AscendEclipseBot:
     async def prepare_items(self):
         minimalScroll = 50
         if self.cmd.get_quant_item("Scroll of Enrage") < minimalScroll:
-            self.cmd.bot.stop_bot(f"Not enough Scroll of Enrage. Minimum {minimalScroll} required.")
+            self.cmd.stop_bot(f"Not enough Scroll of Enrage. Minimum {minimalScroll} required.")
             return
-        await self.cmd.equip_item(self.cmd.getFarmClass())
+        await self.cmd.equip_item(self.cmd.get_farm_class())
         await self.cmd.equip_scroll("Scroll of Enrage")
         await self.cmd.sleep(3000)
 
@@ -80,14 +80,14 @@ class AscendEclipseBot:
             if not self.cmd.is_player_in_cell(self.cmd.bot.follow_player, self.cmd.bot.player.CELL):
                 self.print_debug(f"Going to master's place...")
                 while not self.cmd.is_player_in_cell(self.cmd.bot.follow_player, self.cmd.bot.player.CELL):
-                    await self.cmd.bot.goto_player(self.cmd.bot.follow_player)
+                    await self.cmd.goto_player(self.cmd.bot.follow_player)
                     if self.cmd.get_player_in_map(self.cmd.bot.follow_player):
                         await self.cmd.sleep(200)
                     else:
                         await self.cmd.sleep(1000)
             await self.cmd.sleep(100)
         else:
-            self.cmd.stopBot("No master assigned to follow.")
+            self.cmd.stop_bot("No master assigned to follow.")
 
     def reset_counters(self):
         self.do_taunt = False
@@ -192,7 +192,7 @@ class AscendEclipseBot:
         await self.cmd.sleep(1000)
         
     async def attack_loop(self):
-        while self.cmd.isStillConnected():
+        while self.cmd.is_still_connected():
             await self.cmd.sleep(200)
             self.reset_counters()
             
@@ -290,7 +290,7 @@ class EclipseMasterBot(AscendEclipseBot):
 
         await self.cmd.jump_cell("r3", "Left")
         if self.cmd.is_monster_alive("Ascended Midnight") or self.cmd.is_monster_alive("Ascended Solstice"):
-            self.cmd.bot.respawn_cell_pad = "Enter,Spawn"
+            self.cmd.bot.respawn_cell_pad = ["Enter", "Spawn"]
             return
 
         await self.cmd.jump_cell("r3a", "Left")

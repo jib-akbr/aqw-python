@@ -27,7 +27,7 @@ class Grimgaol:
         self.PENITENCE = "Arch DoomKnight Cape Sword"
 
     async def main(self):
-        while self.cmd.isStillConnected():
+        while self.cmd.is_still_connected():
             await self.cmd.send_packet("%xt%zm%dungeonQueue%16424%grimgaol%")
             await self.cmd.sleep(2000)
 
@@ -50,7 +50,7 @@ class Grimgaol:
             if self.ONE_TIME:
                 break
 
-        self.cmd.stopBot("FINISHED GRIMGAOL")
+        self.cmd.stop_bot("FINISHED GRIMGAOL")
     
     async def Enter(self):
         print("starting Enter")
@@ -64,7 +64,7 @@ class Grimgaol:
         skill_list = [1,2,4]
         skill_index = 0
 
-        while self.cmd.is_monster_alive("Grimskull?") and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive("Grimskull?") and self.cmd.is_still_connected():
             if self.cmd.bot.player.getLastTarget() != None:
                 if self.cmd.bot.player.getLastTarget().getAura("Talon Twisting") != None:
                     # print("arua Talon Twisting detected. attack stopped")
@@ -91,7 +91,7 @@ class Grimgaol:
 
         monster_name = "Grim Bomb"
 
-        while self.cmd.is_monster_alive(monster_name) and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive(monster_name) and self.cmd.is_still_connected():
             await self.cmd.use_skill(0, monster_name)
             if self.cmd.bot.player.canUseSkill(skill_list[skill_index]):
                 await self.cmd.use_skill(skill_list[skill_index], monster_name)
@@ -124,7 +124,7 @@ class Grimgaol:
         elif cell == "r12":
             monster_name = "Grimskull"
 
-        while self.cmd.is_monster_alive(monster_name) and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive(monster_name) and self.cmd.is_still_connected():
             mons_hp = self.cmd.get_monster_hp(monster_name)
             if mons_hp and mons_hp > -1:
                 print(f"{monster_name}: {mons_hp} : {self.cmd.get_monster_hp_percentage(monster_name)}%")
@@ -152,7 +152,7 @@ class Grimgaol:
         skill_index = 0
         monster_name = "Reinforced Shelleton"
 
-        while self.cmd.is_monster_alive(monster_name) and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive(monster_name) and self.cmd.is_still_connected():
             # Arcane Flux -> Corporeal Ascension
             has_corp = self.cmd.bot.player.hasAura("Corporeal Ascension")
             if not has_corp:
@@ -182,7 +182,7 @@ class Grimgaol:
         monster_id = ["id.10", "id.11", "id.12"]
         monster_index = 0
         monster_to_attack = monster_id[monster_index]
-        while self.cmd.is_monster_alive("*") and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive("*") and self.cmd.is_still_connected():
             last_target = self.cmd.bot.player.getLastTarget()
             if last_target:
                 print(f"{last_target.mon_name} ({last_target.mon_map_id}): {last_target.current_hp} / {last_target.max_hp} : {self.cmd.get_monster_hp_percentage(f'id.{last_target.mon_map_id}')}%")
@@ -220,7 +220,7 @@ class Grimgaol:
 
         monster_name = "Rick, Grim Soldier"
 
-        while self.cmd.is_monster_alive("*") and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive("*") and self.cmd.is_still_connected():
             await self.cmd.use_skill(0, monster_name)
             if self.cmd.bot.player.CURRENT_HP > 2500 and (skill_list[skill_index] == 1 or skill_list[skill_index] == 3):
                 await self.cmd.use_skill(skill_list[skill_index], monster_name)
@@ -245,7 +245,7 @@ class Grimgaol:
         skill_index = 0
         monster_name = "Mechro Lich,Rampaging Cyborg"
 
-        while self.cmd.is_monster_alive("*") and self.cmd.isStillConnected():
+        while self.cmd.is_monster_alive("*") and self.cmd.is_still_connected():
             # Arcane Flux -> Corporeal Ascension
             has_corp = self.cmd.bot.player.hasAura("Corporeal Ascension")
             if not has_corp:

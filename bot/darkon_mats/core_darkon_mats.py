@@ -27,7 +27,7 @@ async def a_melody(cmd: Command, qty: int = 300):
         {"item_name": "Knight's Favor", "qty": 1,"map_name": map_name, "cell": "r11", "pad": "Right", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -63,7 +63,7 @@ async def ancient_remnant(cmd: Command, qty: int = 300):
         {"item_name": "Alprecha Observed", "qty": 1,"map_name": map_name, "cell": "r10a", "pad": "Left", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -99,7 +99,7 @@ async def astravian_medal(cmd: Command, qty: int = 300):
         {"item_name": "Burned Banana", "qty": 1,"map_name": map_name, "cell": "r11", "pad": "Left", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -133,7 +133,7 @@ async def bounty_hunter_dubloon(cmd: Command, qty: int = 300):
         {"item_name": "Module 005 Defeated", "qty": 1,"map_name": map_name, "cell": "r6", "pad": "Right", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -171,7 +171,7 @@ async def darkons_receipts_binky(cmd: Command, qty: int = 222):
         {"item_name": "Ingredients?", "qty": 22,"map_name": map_name, "cell": "r5", "pad": "Right", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -209,7 +209,7 @@ async def darkons_receipts_tower_of_doom(cmd: Command, qty: int = 222):
         {"item_name": "Banana", "qty": 22,"map_name": map_name, "cell": "r5", "pad": "Right", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -247,7 +247,7 @@ async def darkons_receipts_arcangrove(cmd: Command, qty: int = 222):
         {"item_name": "Banana", "qty": 22,"map_name": map_name, "cell": "LeftBack", "pad": "Right", "is_solo": False},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -316,7 +316,7 @@ async def mourning_flower(cmd: Command, qty: int = 1000):
         {"item_name": "Replacement Parts", "qty": 7,"map_name": map_name, "cell": "r11", "pad": "Left"},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -353,7 +353,7 @@ async def sukis_prestige(cmd: Command, qty: int = 300):
         {"item_name": "Soldiers Trained", "qty": 8,"map_name": map_name, "cell": "r4", "pad": "Left"},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -383,7 +383,7 @@ async def unfinished_musical_score(cmd: Command, qty: int = 300):
     
     cmd.add_drop(item_name)
 
-    solo_class = cmd.getSoloClass()
+    solo_class = cmd.get_solo_class()
     if solo_class:
         await cmd.equip_item(solo_class)
     
@@ -423,7 +423,7 @@ async def bandits_correspondence(cmd: Command, qty: int = 3000):
         {"item_name": "Seraphic Sparred", "qty": 1,"map_name": map_name, "cell": "r10", "pad": "Left", "is_solo": True},
     ]
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.is_in_inventory(item_name, qty, ">="):
             break
         
@@ -438,15 +438,15 @@ async def bandits_correspondence(cmd: Command, qty: int = 3000):
 
 async def farm_mats(cmd: Command, item_to_farm: list[dict]):
     for item in item_to_farm:
-        if not cmd.isStillConnected():
+        if not cmd.is_still_connected():
             return
         is_solo = item.get("is_solo", False)
         if is_solo:
-            solo_class = cmd.getSoloClass()
+            solo_class = cmd.get_solo_class()
             if solo_class:
                 await cmd.equip_item(solo_class)
         else:
-            farm_class = cmd.getFarmClass()
+            farm_class = cmd.get_farm_class()
             if farm_class:
                 await cmd.equip_item(farm_class)
         await hunt_item(

@@ -29,9 +29,9 @@ async def main(cmd: Command):
 
     skill_list = [0,1,2,0,3,4]
     skill_index = 0
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
         if cmd.bot.follow_player != "" and cmd.bot.followed_player_cell != cmd.bot.player.CELL:
-            await cmd.bot.goto_player(cmd.bot.follow_player)
+            await cmd.goto_player(cmd.bot.follow_player)
             await cmd.sleep(1000)
             continue 
         await cmd.use_skill(skill_list[skill_index])
