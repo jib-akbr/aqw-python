@@ -1,8 +1,14 @@
 import importlib
+
+from colorama import Fore
 from core.bot import Bot
-from templates.attack import generalAttack
 import commands as cmd
 import asyncio
+
+username = input("Username: ")
+password = input("Password: ")
+server = input("Server: ")
+bot_path = input(f"Bot path (e.g., {Fore.BLUE}bot.rep.yew_mountain{Fore.RESET}): ")
 
 # Initialize bot
 b = Bot(
@@ -24,10 +30,13 @@ b = Bot(
     showDebug=False,
     showChat=True,
     isScriptable=True,
-    farmClass="Legion Revenant")
-b.set_login_info("user", "password", "server")
+    followPlayer=None,
+    slavesPlayer=[],
+    farmClass="Legion Revenant",
+    soloClass="Void HighLord")
+b.set_login_info(username, password, server)
 
-bot_path = "bot.void_aura"
+bot_path = bot_path
 try:
     bot_class = importlib.import_module(bot_path)
     print(f"starting bot: {bot_path.split('.')[-1]}")

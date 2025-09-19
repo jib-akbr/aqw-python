@@ -1,6 +1,9 @@
-# Simple AQW Bot using Python Scripts
+# AQW Python Bot
 
-Arrange your commands, and the bot will execute them in sequence. See an example in `bot_tes.py`.
+This toolkit supports two bot workflows depending on how you like to automate:
+
+- **Sequential Execution Mode** - queue commands and let the engine run them in order. Based on **Grimlite** botting commands. 
+- **Scriptable Mode** - write Python script to run the commands as you want.
 
 ## Requirements
 
@@ -11,7 +14,7 @@ Arrange your commands, and the bot will execute them in sequence. See an example
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/letsssgoo/aqw-python.git
+   git clone https://github.com/froztt13/aqw-python.git
    cd aqw-python
    ```
 
@@ -30,19 +33,21 @@ Arrange your commands, and the bot will execute them in sequence. See an example
 
 ### Sequential Execution Mode
 
-Run commands using `bot_tes.py`:
+Scripts under `bot_cmds/` run commands one after another. Example: `bot_cmds/bot_tes.py`.
 
 ```bash
-python -m examples.bot_tes
+python -m bot_cmds.bot_tes
 ```
 
 ### Scriptable Mode
 
-Run the bot in scriptable mode using `single_acc_without_env.py`:
+Use the `bot/` package to script complex behaviour. Example: `start.py`.
 
 ```bash
-python single_acc_without_env.py
+python start.py
 ```
+
+You can also run the scriptable mode in Docker via `start_env.py`, which handles environment setup automatically.
 
 ### Docker Setup (Optional)
 
