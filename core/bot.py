@@ -2,20 +2,15 @@ import socket
 from core.player import Player
 from core.utils import normalize
 from core.commands import Command
-import re
 import json
 import time
 from typing import List
 from xml.etree import ElementTree
 import xml.etree.ElementTree as ET
-from collections import deque
 from datetime import datetime, timedelta
 from colorama import Fore, Back, Style, init
-import colorama
-import threading
 import inspect
 import asyncio
-from abc import ABC, abstractmethod
 from model import Shop
 from model import Monster
 from model import ItemInventory, ItemType, Faction, PlayerArea
@@ -928,41 +923,6 @@ class Bot:
     
     def use_skill_to_myself(self, skill):
         self.write_message(f"%xt%zm%gar%1%0%a{skill}>p:{self.username_id}%wvz%")
-        
-    def check_is_skill_safe(self, skill: int):
-        conditions = {
-            "void highlord": {
-                "hp_threshold": 50, # in percentage of current hp from max hp
-                "skills_to_check": [1, 3],
-                "condition": lambda hp, threshold: hp < threshold
-            },
-            "scarlet sorceress": {
-                "hp_threshold": 50,
-                "skills_to_check": [1, 4],
-                "condition": lambda hp, threshold: hp < threshold
-            },
-            "dragon of time": {
-                "hp_threshold": 40,
-                "skills_to_check": [1, 3],
-                "condition": lambda hp, threshold: hp < threshold
-            },
-            # "archpaladin": {
-            #     "hp_threshold": 70,
-            #     "skills_to_check": [2],
-            #     "condition": lambda hp, threshold: hp > threshold
-            # },
-        }
-        # Get the class and its conditions
-        equipped_class = self.player.get_equipped_item(ItemType.CLASS)
-        if equipped_class:
-            if equipped_class.item_name in conditions:
-                condition = conditions[equipped_class.item_name]
-                current_hp = self.player.CURRENT_HP
-                max_hp = self.player.MAX_HP
-                # Check if the current conditions match
-                if skill in condition["skills_to_check"] and condition["condition"]((current_hp / max_hp) * 100, condition["hp_threshold"]):
-                    return False
-        return True
 
     def do_wait(self, wait_ms: int):
         self.wait_ms = wait_ms/1000

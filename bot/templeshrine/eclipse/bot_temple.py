@@ -16,8 +16,8 @@ from core.commands import Command
 
 server = "safiria"
 slaves = [
-    SlaveConfig("username",
-                "password",
+    SlaveConfig("remake",
+                "pss19766",
                 "Legion Revenant",
                 EclipseMasterBot,
                 default_target="Ascended Solstice,Blessless Deer",
@@ -26,8 +26,8 @@ slaves = [
                 light_gather_taunter=False,
                 ),
 
-    SlaveConfig("username",
-                "password",
+    SlaveConfig("great least",
+                "pss1976",
                 "StoneCrusher",
                 EclipseSlaveBot,
                 default_target="Ascended Solstice",
@@ -37,8 +37,8 @@ slaves = [
                 debug_mon=True
                 ),
 
-    SlaveConfig("username",
-                "password",
+    SlaveConfig("fierce ward",
+                "pss19766",
                 "ArchPaladin",
                 EclipseSlaveBot,
                 default_target="Ascended Midnight",
@@ -48,8 +48,8 @@ slaves = [
                 moon_haze_taunter=True,
                 ),
 
-    SlaveConfig("username",
-                "password",
+    SlaveConfig("jeazt",
+                "pss1976",
                 "Lord of Order",
                 EclipseSlaveBot,
                 default_target="Ascended Midnight",

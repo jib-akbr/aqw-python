@@ -14,7 +14,7 @@ async def main(cmd: Command):
     await cmd.bank_to_inv(item_list)
     await cmd.equip_item("ArchPaladin")
 
-    while cmd.isStillConnected():
+    while cmd.is_still_connected():
 
         await cmd.ensure_accept_quest(6208)
 

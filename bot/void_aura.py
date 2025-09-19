@@ -119,7 +119,7 @@ async def main(cmd: Command):
         },
     ]
 
-    while cmd.is_in_inventory("Void Aura", 7500, "<") and cmd.isStillConnected():
+    while cmd.is_in_inventory("Void Aura", 7500, "<") and cmd.is_still_connected():
         await cmd.ensure_accept_quest(4432)
 
         if cmd.can_turnin_quest(4432):
@@ -129,7 +129,7 @@ async def main(cmd: Command):
         cmd.farming_logger("Void Aura", 7500)
         
         for task in hunt_tasks:
-            if not cmd.isStillConnected():
+            if not cmd.is_still_connected():
                 return
             await hunt_item(
                 cmd,
