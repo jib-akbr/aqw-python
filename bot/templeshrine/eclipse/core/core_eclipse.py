@@ -212,6 +212,7 @@ class AscendEclipseBot:
             master = self.cmd.get_player_in_map(self.cmd.bot.follow_player)
             check_master_in_cell = self.role == "master" or (master and master.str_frame == self.cmd.bot.player.CELL)
             while self.cmd.is_monster_alive() and check_master_in_cell:
+                await self.cmd.sleep(200)
 
                 if self.cmd.bot.player.hasAura("Solar Flare"):
                     self.target_monsters = "Blessless Deer"
@@ -229,17 +230,15 @@ class AscendEclipseBot:
                     await self.cmd.wait_use_skill(5, target_monsters=target)
                     self.taunt_target = None
                     self.do_taunt = False
-                    await self.cmd.sleep(200)
                     continue
 
-                self.stop_attack = self.cmd.bot.player.hasAura("Sun's Heat")
-                await self.cmd.use_skill(self.skill_list[self.skill_index],
-                                            self.target_monsters,
-                                            buff_only=self.stop_attack)
+                if self.cmd.bot.player.hasAura("Sun's Heat"):
+                    continue
+
+                await self.cmd.use_skill(self.skill_list[self.skill_index], self.target_monsters)
                 self.skill_index += 1
                 if self.skill_index >= len(self.skill_list):
                     self.skill_index = 0
-                await self.cmd.sleep(200)
                 
             self.is_attacking = False
 

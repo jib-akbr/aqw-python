@@ -1,8 +1,9 @@
 import asyncio
 
-from core.commands.base import _CommandBase, check_alive
+from core.commands.base import check_alive
+from core.commands.player_commands import PlayerCommands
 
-class MapCommands(_CommandBase):
+class MapCommands(PlayerCommands):
     """Map travel and positioning helpers."""
 
     @check_alive
@@ -12,9 +13,12 @@ class MapCommands(_CommandBase):
         Args:
             player_name (str): Target player name to follow.
         """
-        await self.bot.ensure_leave_from_combat(always=True)
-        self.bot.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
-        await self.sleep(1000)
+        if self.get_player_in_map(player_name) ==  None:
+            await self.bot.ensure_leave_from_combat(always=True)
+            self.bot.write_message(f"%xt%zm%cmd%1%goto%{player_name}%")
+            await self.sleep(1000)
+        else:
+            self.bot.jump_cell(self.get_player_in_map(player_name).str_frame, self.get_player_in_map(player_name).str_pad)
 
     @check_alive
     async def join_house(self, houseName: str, safeLeave: bool = True) -> None:
@@ -107,3 +111,5 @@ class MapCommands(_CommandBase):
             speed (int): Movement speed for the walk animation."""
         await self.bot.walk_to(X, Y, speed)
         await self.sleep(200)
+
+
