@@ -1,4 +1,7 @@
 import asyncio
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from core.bot import Bot
 
 async def server_handler_task(bot: 'Bot'):
     print("Running server handler...")

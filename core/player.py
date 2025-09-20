@@ -1,5 +1,5 @@
 import requests
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 from .utils import checkOperator
 from colorama import Fore
@@ -16,15 +16,15 @@ class Player:
     # 1 = alive, not in combat
     # 2 = alive, in combat
 
-    def __init__(self, user, pwd):
-        self.USER = user
-        self.PASS = pwd
+    def __init__(self):
+        self.USER: str = ""
+        self.PASS: str = ""
         self.TOKEN = ""
         self.SERVERS = []
         self.SKILLS = []
         self.SKILLUSED = {}
-        self.CELL = ""
-        self.PAD = ""
+        self.CELL: str = ""
+        self.PAD: str = ""
         self.CDREDUCTION = 0
         self.ManaCost = 1.0
         self.LOGINUSERID = 0
@@ -32,15 +32,15 @@ class Player:
         self.TEMPINVENTORY: List[ItemInventory] = []
         self.BANK: List[ItemInventory] = []
         self.FACTIONS: list[Faction] = []
-        self.CHARID = 0
-        self.GOLD = 0
-        self.GOLDFARMED = 0
-        self.EXPFARMED = 0
-        self.ISDEAD = False
-        self.MAX_HP = 9999
-        self.MAX_MP = 100
-        self.CURRENT_HP = 9999
-        self.MANA = 100
+        self.CHARID: int = 0
+        self.GOLD: int = 0
+        self.GOLDFARMED: int = 0
+        self.EXPFARMED: int = 0
+        self.ISDEAD: bool = False
+        self.MAX_HP: int = 9999
+        self.MAX_MP: int = 100
+        self.CURRENT_HP: int = 9999
+        self.MANA: int = 100
         self.IS_IN_COMBAT: bool = False
         self.X: int = 0
         self.Y: int= 0
@@ -49,7 +49,9 @@ class Player:
         self.last_target: Monster = None
         self.is_member: bool = False
 
-    def getInfo(self):
+    def login(self, username: str, password: str):
+        self.USER = username
+        self.PASS = password
         url = "https://game.aq.com/game/api/login/now?"
 
         data = {
@@ -132,13 +134,13 @@ class Player:
         
         # print(f"skill:{skillNumber} cd:{cd} cdr:{cdr * 100:.2f}% => result:{effective_cd:.2f}ms")
 
-    def get_equipped_item(self, item_type: ItemType):
+    def get_equipped_item(self, item_type: ItemType) -> Optional[ItemInventory]:
         for item in self.INVENTORY:
             if item.s_es == item_type.value and item.is_equipped:
                 return item
         return None
 
-    def get_item_inventory(self, itemName: str) -> ItemInventory:
+    def get_item_inventory(self, itemName: str) -> Optional[ItemInventory]:
         for item in self.INVENTORY:
             if item.item_name == normalize(itemName):
                 return item
@@ -156,9 +158,9 @@ class Player:
                 return item
         return None
 
-    def get_item_inventory_by_enhance_id(self, enh_id: int) -> ItemInventory:
+    def get_item_inventory_by_enhance_id(self, enh_id: int) -> Optional[ItemInventory]:
         for item in self.INVENTORY:
-            if item.enh_id == enh_id:
+            if item.enh_pattern_id == enh_id:
                 return item
         return None
     
@@ -231,7 +233,7 @@ class Player:
     def removeAllAuras(self):
         self.AURAS: list[Aura] = []
 
-    def getAura(self, auraName: str) -> Aura:
+    def getAura(self, auraName: str) -> Optional[Aura]:
         normalized_name = normalize(auraName)
         for aura in self.AURAS:
             if aura.name == normalized_name and not aura.is_expired():

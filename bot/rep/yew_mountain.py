@@ -1,4 +1,4 @@
-from core.commands import Command
+from core.command import Command
 from core.task import FarmTask, do_farm_tasks
 from colorama import Fore
 

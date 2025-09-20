@@ -5,7 +5,7 @@ this just example, not actually do malgor
 
 import json
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 from colorama import Fore
 
 speaker_counter = 0

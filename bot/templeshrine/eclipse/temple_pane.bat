@@ -1,7 +1,7 @@
 @echo off
 title Temple Shrine Dungeon
 
-set PROJECT_PATH="D:\Python\aqw-python"
+set PROJECT_PATH="D:\aqw-python"
 set BOT_PATH=bot.templeshrine.eclipse.bot_temple
 set USER_NAME=u
 set PASSWORD=p

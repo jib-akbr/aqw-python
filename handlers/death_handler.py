@@ -1,7 +1,11 @@
 import asyncio
 from datetime import datetime
+from typing import TYPE_CHECKING
 from colorama import Fore
 
+if TYPE_CHECKING:
+    from core.bot import Bot
+    
 async def death_handler_task(bot: 'Bot'):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Running death handler...")
     for i in range(11):

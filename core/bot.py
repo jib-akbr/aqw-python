@@ -1,10 +1,10 @@
 import socket
+from core.command import Command
 from core.player import Player
 from core.utils import normalize
-from core.commands import Command
 import json
 import time
-from typing import List
+from typing import Awaitable, Callable, List, Optional
 from xml.etree import ElementTree
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
@@ -22,7 +22,7 @@ class Bot:
 
     def __init__(
             self, 
-            roomNumber: str = None, 
+            roomNumber: Optional[str] = None, 
             itemsDropWhiteList = [],
             cmdDelay: int = 1000,
             showLog: bool = True, 
@@ -32,11 +32,11 @@ class Bot:
             followPlayer: str = "",
             slavesPlayer: List[str] = [],
             isScriptable: bool = False,
-            farmClass: str = None,
-            soloClass: str = None,
+            farmClass: Optional[str] = None,
+            soloClass: Optional[str] = None,
             restartOnAFK: bool = True,
             autoAdjustSkillDelay: bool = False,
-            respawnCellPad: List[str] = None, # format: "cell,pad"
+            respawnCellPad: List[str] = [],
             muteSpamWarning: bool = False
             ):
         self.roomNumber = roomNumber
@@ -62,7 +62,7 @@ class Bot:
         self.is_client_connected = False
         
         self.wait_ms = 0
-        self.player = None
+        self.player = Player()
         self.cmds = []
         self.index = 0
         self.areaId = None
@@ -71,7 +71,7 @@ class Bot:
         self.username = ""
         self.password = ""
         self.server = ""
-        self.server_info = None
+        self.server_info: List[str] = []
         self.client_socket = None
         self.users_id_in_cell = []
         self.users_name_in_cell = []
@@ -85,7 +85,7 @@ class Bot:
         self.is_aggro_handler_task_running = False
         self.followed_player_cell = None
         self.subscribers = []
-        self.scroll_id: str = 0
+        self.scroll_id: str = ""
         self.battle_analyzer: bool = False
 
         self.auto_adjust_skill_delay = autoAdjustSkillDelay
@@ -122,11 +122,11 @@ class Bot:
         self.password = password
         self.server = server
         
-    async def start_bot(self, botMain = None):
+    async def start_bot(self, botMain: Optional[Callable[[Command], Awaitable[None]]] = None):
         self.login(self.username, self.password, self.server)
         if self.server_info:
             await self.connect_client()
-            if self.isScriptable:
+            if self.isScriptable and botMain:
                 self.bot_main = botMain
                 asyncio.create_task(self.read_server_in_background())
 
@@ -170,8 +170,7 @@ class Bot:
         print(f"[{datetime.now().strftime('%H:%M:%S')}] [{caller_name}] {combined_message}")
 
     def login(self, username, password, server):
-        self.player = Player(username, password)
-        if self.player.getInfo():
+        if self.player.login(username, password):
             self.server_info = self.player.getServerInfo(server)
             
     async def relogin_and_restart(self, async_bot= None):
@@ -303,7 +302,7 @@ class Bot:
                 mon_map = data.get("monmap")
                 self.areaName = data["areaName"] #"yulgar-99999"
                 self.areaId = data["areaId"]
-                self.strMapName = data["strMapName"] #"yulgar"
+                self.strMapName: str = data["strMapName"] #"yulgar"
                 self.monsters: list[Monster] = []
                 self.player_in_area: list[PlayerArea] = []
                 for i_uo_branch in uo_branch:
@@ -932,7 +931,7 @@ class Bot:
         for user in root.findall(".//u"):
             self.user_id = user.get("i")  # Get the id
             self.user_ids.append(self.user_id)  # Append to the list
-            name = user.find("n").text  # Get the username
+            name: str = user.find("n").text  # Get the username
             if name.lower() == self.player.USER.lower():
                 self.username_id = self.user_id  # Store the ID of the target username
 
@@ -954,7 +953,7 @@ class Bot:
             self.jump_cell(self.player.CELL, self.player.PAD)
             await asyncio.sleep(sleep_ms/1000)
         
-    def jump_cell(self, cell, pad = "Left"):
+    def jump_cell(self, cell: str, pad: str = "Left"):
         msg = f"%xt%zm%moveToCell%{self.areaId}%{cell}%{pad}%"
         self.player.CELL = cell
         self.player.PAD = pad

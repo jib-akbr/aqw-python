@@ -1,5 +1,5 @@
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 from templates.hunt import hunt_item
 
 async def a_melody(cmd: Command, qty: int = 300):

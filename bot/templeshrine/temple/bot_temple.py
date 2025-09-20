@@ -2,7 +2,7 @@ import asyncio
 
 from bot.templeshrine.temple.core.core_temple import MidnightSunBot, SolsticeMoonBot
 from bot.templeshrine.temple.core.config import SlaveConfig
-from core.commands import Command
+from core.command import Command
 from core.bot import Bot
 from colorama import Fore
 

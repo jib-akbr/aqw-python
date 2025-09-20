@@ -1,5 +1,5 @@
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 from templates.hunt import kill_quest, quest_item_req, hunt_item
 
 async def Trygve(cmd: Command):

@@ -1,6 +1,6 @@
 from core.bot import Bot
-from core.commands import Command
-from core.commands import Command
+from core.command import Command
+from core.command import Command
 from abstracts.base_command import BaseCommand
 
 class JoinMapCmd(BaseCommand):

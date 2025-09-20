@@ -1,5 +1,5 @@
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 
 async def main(cmd: Command):
     private_room_number = 1231

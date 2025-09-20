@@ -4,7 +4,7 @@ import asyncio
 import json
 from collections import deque
 from core.utils import is_valid_json
-from core.commands import Command
+from core.command import Command
 from colorama import Fore
 import colorama
 
@@ -71,7 +71,9 @@ class AscendEclipseBot:
         if self.cmd.get_quant_item("Scroll of Enrage") < minimalScroll:
             self.cmd.stop_bot(f"Not enough Scroll of Enrage. Minimum {minimalScroll} required.")
             return
-        await self.cmd.equip_item(self.cmd.get_farm_class())
+        farm_class = self.cmd.get_farm_class()
+        if farm_class:
+            await self.cmd.equip_item(farm_class)
         await self.cmd.equip_scroll("Scroll of Enrage")
         await self.cmd.sleep(3000)
 
@@ -179,8 +181,9 @@ class AscendEclipseBot:
                 self.print_debug(f"Monster id:{mon_map_id} is dead.")
             if monHp and self.debug_mon:
                 mon = self.cmd.get_monster(f"id.{mon_map_id}")
-                monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
-                self.print_debug(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
+                if mon:
+                    monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
+                    self.print_debug(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
 
     async def wait_party_invite(self):
         self.print_debug("Waiting for party invitation...")
@@ -273,7 +276,7 @@ class EclipseMasterBot(AscendEclipseBot):
                     await self.cmd.sleep(500)
 
         self.print_debug(f"Checking for monsters...")
-        self.cmd.bot.respawn_cell_pad = None
+        self.cmd.bot.respawn_cell_pad = []
 
         await self.cmd.jump_cell("Enter", "Spawn")
         if self.cmd.is_monster_alive("Blessless Deer") or self.cmd.is_monster_alive("Fallen Star"):
