@@ -72,8 +72,10 @@ class CombatCommands(_CommandBase):
         Returns:
             None: The coroutine finishes once the skill has been used.
         """
-        while not self.bot.player.canUseSkill(int(index)):
+        i = 0
+        while not self.bot.player.canUseSkill(int(index)) and i < 5:
             await self.sleep(100)
+            i += 1
         await self.use_skill(index, target_monsters)
         
     def check_is_skill_safe(self, skill: int) -> bool:
