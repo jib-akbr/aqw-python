@@ -244,6 +244,7 @@ class AscendEclipseBot:
                     self.skill_index = 0
                 
             self.is_attacking = False
+        print("Disconnected.")
 
 # -------- Subclass untuk tiap variasi --------
 

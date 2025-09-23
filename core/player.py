@@ -46,7 +46,7 @@ class Player:
         self.Y: int= 0
         self.AURAS: list[Aura] = []
         self.skills_ref: dict = {}
-        self.last_target: Monster = None
+        self.last_target: Optional[Monster] = None
         self.is_member: bool = False
 
     def login(self, username: str, password: str):
@@ -247,13 +247,13 @@ class Player:
                 return True
         return False
     
-    def setLastTarget(self, monster: Monster):
+    def setLastTarget(self, monster: Optional[Monster]):
         if monster == None:
             self.last_target = None
             return
         self.last_target = monster
     
-    def getLastTarget(self) -> Monster:
+    def getLastTarget(self) -> Optional[Monster]:
         return self.last_target
     
     def setIsInCombat(self, player_state: int):

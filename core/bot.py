@@ -22,7 +22,7 @@ class Bot:
 
     def __init__(
             self, 
-            roomNumber: Optional[str] = None, 
+            roomNumber: Optional[int] = None, 
             itemsDropWhiteList = [],
             cmdDelay: int = 1000,
             showLog: bool = True, 
@@ -157,6 +157,7 @@ class Bot:
         asyncio.create_task(aggro_handler_task(self))
     
     def stop_bot(self):
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Stopping bot...")
         self.is_client_connected = False
         if self.client_socket:
             self.client_socket.close()
@@ -1025,7 +1026,7 @@ class Bot:
         self.battle_analyzer_time_start: datetime = None
         self.battle_analyzer_total_damage: int = 0
     
-    def get_player_in_area(self, player_name: str) -> PlayerArea:
+    def get_player_in_area(self, player_name: str) -> Optional[PlayerArea]:
         for player in self.player_in_area:
             if player_name.lower() == player.str_username.lower():
                 return player
