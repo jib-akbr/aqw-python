@@ -1,5 +1,5 @@
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 import time, json
 from datetime import datetime, timedelta
 

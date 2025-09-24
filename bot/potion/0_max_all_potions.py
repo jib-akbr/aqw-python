@@ -1,5 +1,5 @@
 ﻿from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 from bot.potion.core_potion import PotentDestructionElixir, PotentHonorMalice, PotentMalevolence, PotentRevitalizeElixir, PotentBattleElixir, SageTonic, FateTonic, BodyTonic, MightTonic
 
 # get the maxiumum quant of potions

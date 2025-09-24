@@ -2,4 +2,5 @@
 python-dotenv>=1.0.1
 Requests>=2.32.3
 mkdocs-material>=9.5.0
-mkdocstrings[python]>=0.22.0
+mkdocstrings>=0.25.1
+mkdocstrings-python>=1.9.2

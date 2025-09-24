@@ -1,7 +1,7 @@
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 from abstracts.base_command import BaseCommand
-from core.commands import Command
+from core.command import Command
 from model import Monster
 import asyncio
 

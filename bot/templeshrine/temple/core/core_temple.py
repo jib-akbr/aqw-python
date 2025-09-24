@@ -3,7 +3,7 @@ import time
 import json
 from datetime import datetime
 from colorama import Fore
-from core.commands import Command
+from core.command import Command
 from core.utils import is_valid_json
 
 

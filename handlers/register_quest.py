@@ -1,5 +1,8 @@
-
 import asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.bot import Bot
 
 async def register_quest_task(bot: 'Bot'):
     print("Running registered quests...")

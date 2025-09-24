@@ -1,8 +1,8 @@
 ﻿# Command Helpers
 
-API reference for the routines defined in `core.commands`.
+API reference for the routines defined in `core.command`.
 
-::: core.commands
+::: core.command
     handler: python
     options:
       docstring_style: google

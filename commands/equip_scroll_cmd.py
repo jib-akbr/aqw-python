@@ -1,5 +1,5 @@
 from core.bot import Bot
-from core.commands import Command
+from core.command import Command
 from model.inventory import ScrollType
 from abstracts.base_command import BaseCommand
 import asyncio

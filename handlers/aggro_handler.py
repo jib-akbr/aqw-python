@@ -1,6 +1,10 @@
 import asyncio
+from typing import TYPE_CHECKING
 from colorama import Fore
 
+if TYPE_CHECKING:
+    from core.bot import Bot
+    
 async def aggro_handler_task(bot: 'Bot'):
     print("Running aggro handler...")
     #  %xt%zm%aggroMon%0%id%

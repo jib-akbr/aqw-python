@@ -4,7 +4,7 @@ import asyncio
 import json
 from collections import deque
 from core.utils import is_valid_json
-from core.commands import Command
+from core.command import Command
 from colorama import Fore
 import colorama
 
@@ -71,7 +71,9 @@ class AscendEclipseBot:
         if self.cmd.get_quant_item("Scroll of Enrage") < minimalScroll:
             self.cmd.stop_bot(f"Not enough Scroll of Enrage. Minimum {minimalScroll} required.")
             return
-        await self.cmd.equip_item(self.cmd.get_farm_class())
+        farm_class = self.cmd.get_farm_class()
+        if farm_class:
+            await self.cmd.equip_item(farm_class)
         await self.cmd.equip_scroll("Scroll of Enrage")
         await self.cmd.sleep(3000)
 
@@ -179,8 +181,9 @@ class AscendEclipseBot:
                 self.print_debug(f"Monster id:{mon_map_id} is dead.")
             if monHp and self.debug_mon:
                 mon = self.cmd.get_monster(f"id.{mon_map_id}")
-                monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
-                self.print_debug(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
+                if mon:
+                    monHpPercent = round(((mon.current_hp/mon.max_hp)*100), 2)
+                    self.print_debug(f"id.{mon_map_id} - {mon.mon_name} HP: {monHpPercent}%")
 
     async def wait_party_invite(self):
         self.print_debug("Waiting for party invitation...")
@@ -212,6 +215,7 @@ class AscendEclipseBot:
             master = self.cmd.get_player_in_map(self.cmd.bot.follow_player)
             check_master_in_cell = self.role == "master" or (master and master.str_frame == self.cmd.bot.player.CELL)
             while self.cmd.is_monster_alive() and check_master_in_cell:
+                await self.cmd.sleep(200)
 
                 if self.cmd.bot.player.hasAura("Solar Flare"):
                     self.target_monsters = "Blessless Deer"
@@ -229,19 +233,18 @@ class AscendEclipseBot:
                     await self.cmd.wait_use_skill(5, target_monsters=target)
                     self.taunt_target = None
                     self.do_taunt = False
-                    await self.cmd.sleep(200)
                     continue
 
-                self.stop_attack = self.cmd.bot.player.hasAura("Sun's Heat")
-                await self.cmd.use_skill(self.skill_list[self.skill_index],
-                                            self.target_monsters,
-                                            buff_only=self.stop_attack)
+                if self.cmd.bot.player.hasAura("Sun's Heat"):
+                    continue
+
+                await self.cmd.use_skill(self.skill_list[self.skill_index], self.target_monsters)
                 self.skill_index += 1
                 if self.skill_index >= len(self.skill_list):
                     self.skill_index = 0
-                await self.cmd.sleep(200)
                 
             self.is_attacking = False
+        print("Disconnected.")
 
 # -------- Subclass untuk tiap variasi --------
 
@@ -274,7 +277,7 @@ class EclipseMasterBot(AscendEclipseBot):
                     await self.cmd.sleep(500)
 
         self.print_debug(f"Checking for monsters...")
-        self.cmd.bot.respawn_cell_pad = None
+        self.cmd.bot.respawn_cell_pad = []
 
         await self.cmd.jump_cell("Enter", "Spawn")
         if self.cmd.is_monster_alive("Blessless Deer") or self.cmd.is_monster_alive("Fallen Star"):

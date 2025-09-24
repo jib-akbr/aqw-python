@@ -1,6 +1,6 @@
 from core.bot import Bot
 import commands as cmd
-from core.commands import Command
+from core.command import Command
 
 async def hunt_item(
         cmd: Command,

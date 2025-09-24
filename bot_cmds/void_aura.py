@@ -3,6 +3,10 @@ from templates.hunt import hunt_item_cmds
 import commands as cmd
 import asyncio
 
+username = input("Username: ")
+password = input("Password: ")
+server = input("Server: ")
+
 # Initialize bot
 b = Bot(
     roomNumber=None, 
@@ -23,7 +27,7 @@ b = Bot(
     showLog=True, 
     showDebug=False,
     showChat=True)
-b.set_login_info("u", "p", "yorumi")
+b.set_login_info(username, password, server)
 
 # Initialize variables
 private_room_number = 999999
