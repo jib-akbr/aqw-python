@@ -13,7 +13,4 @@ class InvToBankCmd(BaseCommand):
         cmd.inv_to_bank(self.itemNames)
         
     def to_string(self):
-        if len(self.itemNames) == 1:
-            return f"Inv to bank: {self.itemNames[0]}"
-        else:
-            return f"Inv to bank: {', '.join(self.itemNames)}"
+        return f"Inv to bank: {self.itemNames}"
