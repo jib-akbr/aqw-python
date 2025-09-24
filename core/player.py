@@ -1,5 +1,6 @@
 import requests
 from typing import List, Optional
+import random
 from datetime import datetime, timedelta
 from .utils import checkOperator
 from colorama import Fore
@@ -76,7 +77,8 @@ class Player:
         return None
 
     def loadBank(self):
-        url = "https://game.aq.com/game/api/char/bank?v=0.35129284486174583"
+        random_v = f"0.{random.randint(10**16, 10**17 - 1)}"
+        url = f"https://game.aq.com/game/api/char/bank?v={random_v}"
 
         data = {
             "layout": {
@@ -112,7 +114,7 @@ class Player:
         current_mana = self.MANA
         skillCost = skills["mp"]*self.ManaCost
         if current_mana < skillCost:
-            # print(f"skill:{skillNumber} cost:{skillCost} current_mp:{current_mana}")
+            print(f"skill:{skillNumber} cost:{skillCost} current_mp:{current_mana}")
             return False
         
         # Cooldown check 
