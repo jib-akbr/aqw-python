@@ -6,6 +6,7 @@ from functools import wraps
 from inspect import iscoroutinefunction
 from typing import List, Optional, Union
 from colorama import Fore
+from enum import Enum
 
 from core.player import Player
 from core.utils import normalize
@@ -78,6 +79,12 @@ def check_alive(func):
     # Check if the function is async and use the appropriate wrapper
     return async_wrapper if iscoroutinefunction(func) else sync_wrapper
 
+class SkillMode(Enum):
+    BUFF_ONLY = 1    # using buff type skill only 
+    ATTACK_ONLY = 2  # using attack type skill only
+    ALL = 3    # using both type skills
+    NONE = 4    # pause attack
+    
 class Command:
     """Facade that exposes quest, item, map, combat, player, and utility helpers."""
         
@@ -933,7 +940,7 @@ class Command:
                         index: int = 0, 
                         target_monsters: str = "*", 
                         hunt: bool = False, 
-                        buff_only: bool = False,
+                        skill_mode: SkillMode = SkillMode.ALL,
                         reload_delay: int = 500
         ) -> None:
         """Execute a skill with optional hunting, targeting, and cooldown handling.
@@ -942,12 +949,14 @@ class Command:
             index (int): Skill slot that should be triggered.
             target_monsters (str): Target filter, ``*`` for any or comma-separated list.
             hunt (bool): When True, jump to the monster before casting.
-            buff_only (bool): Prevent damaging skills from firing when True.
+            skill_mode (SkillType): Defines which types of skills (buff, attack, all, none) can be used.
             reload_delay (int): Cooldown buffer in milliseconds after casting.
 
         Returns:
             None: The coroutine schedules the skill usage and exits.
         """
+        if skill_mode == SkillMode.NONE:
+            return
         if not self.bot.player.canUseSkill(int(index)) or not self.check_is_skill_safe(int(index)):
             return
 
@@ -960,7 +969,7 @@ class Command:
             # print(Fore.BLUE + f"[{datetime.now().strftime('%H:%M:%S')}] wait reload skill:{index} cd:{wait_reload_s:.2f} s" + Fore.RESET)
             await self.sleep(wait_reload_s*1000)
 
-        if skill["tgt"] == "h": 
+        if skill["tgt"] == "h" and skill_mode in (SkillMode.ALL, SkillMode.ATTACK_ONLY): 
             priority_monsters_id = []
             if hunt and len(target_monsters.split(",")) == 1 and target_monsters != "*":
                 await self.jump_to_monster(target_monsters, byAliveMonster=True)
@@ -1015,12 +1024,14 @@ class Command:
                 final_ids = [mon.mon_map_id for mon in cell_monsters]
             if index == 5:
                 self.bot.use_scroll(final_ids, max_target)
-            if index < 5 and len(final_ids) > 0 and not buff_only:
+            if index < 5 and final_ids:
                 self.bot.use_skill_to_monster("a" if index == 0 else index, final_ids, max_target)
-        elif skill["tgt"] == "f":
-            self.bot.use_skill_to_player(index, max_target)
-        elif skill["tgt"] == "s":
-            self.bot.use_skill_to_myself(index)
+        
+        if skill_mode in (SkillMode.ALL, SkillMode.BUFF_ONLY):
+            if skill["tgt"] == "f":
+                self.bot.use_skill_to_player(index, max_target)
+            if skill["tgt"] == "s":
+                self.bot.use_skill_to_myself(index)
 
         await self.sleep(200)
         self.bot.player.updateNextUse(index) # do this if skills is REALLY exetuced
