@@ -1128,9 +1128,21 @@ class Command:
         """
         return ((self.bot.player.CURRENT_HP / self.bot.player.MAX_HP) * 100) < percent
 
+    def get_user_id(self) -> str:
+        """Return current player user ID."""
+        return self.bot.user_id
+
     def get_player(self) -> Player:
-        """Return the bot's active player instance."""
+        """Return current player instance."""
         return self.bot.player
+    
+    def get_followed_player(self) -> str:
+        """Return username of registered followed player username."""
+        return self.bot.follow_player
+    
+    def get_slaves(self) -> List[str]:
+        """Return list of registered Slaves username"""
+        return self.bot.slaves_player
 
     def is_player_alive(self) -> bool:
         """Return True when the local player is not dead."""
@@ -1172,13 +1184,21 @@ class Command:
         await self.send_packet(f"%xt%zm%message%{self.bot.areaId}%{message}%zone%")
 
     async def rest(self) -> None:
-        """Request the rest action from the server."""
+        """Request the rest action."""
         await self.send_packet(f"%xt%zm%restRequest%1%%")
 
     @check_alive
     async def sleep(self,  milliseconds: int) -> None:
         """Asynchronously sleep for the requested number of milliseconds."""
         await asyncio.sleep(milliseconds/1000)
+        
+    def subscribe(self, callback):
+        """Register a server message/response handler."""
+        self.bot.subscribe(callback)
+
+    def unsubscribe(self, callback):
+        """Remove server message/response handler."""
+        self.bot.unsubscribe(callback)
 
     async def send_packet(self, packet: str) -> None:
         """Send a raw packet to the server after validating connectivity."""
