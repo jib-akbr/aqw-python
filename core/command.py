@@ -723,6 +723,17 @@ class Command:
             bool: True when the current map differs from ``mapName``.
         """
         return mapName.lower() != self.bot.strMapName.lower()
+    
+    def is_in_map(self, mapName: str) -> bool:
+        """Return True when the player is currently in the given map.
+        
+        Args:
+            mapName (str): Map identifier to compare.
+            
+        Returns:
+            bool: True when the current map matches ``mapName``.
+        """
+        return mapName.lower() == self.bot.strMapName.lower()
 
     @check_alive
     async def jump_cell(self, cell: str, pad: str) -> None:

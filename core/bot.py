@@ -159,8 +159,6 @@ class Bot:
     def stop_bot(self):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Stopping bot...")
         self.is_client_connected = False
-        if self.client_socket:
-            self.client_socket.close()
 
     def debug(self, *args):
         if not self.showDebug:
@@ -201,7 +199,7 @@ class Bot:
         port = self.server_info[1]
         self.debug(hostname, port)
         host_ip = socket.gethostbyname(hostname)
-        print(f"Connecting to {self.server} server...")
+        print(f"Connecting to {Fore.BLUE + self.server.upper() + Fore.RESET} server...")
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((host_ip, port))
         self.is_client_connected = True
@@ -805,6 +803,8 @@ class Bot:
                 print(tb_str)
                 if self.is_client_connected == False and self.auto_relogin == False:
                     raise Exception("Connection closed by the server.")
+        if self.client_socket:
+            self.client_socket.close()
     
     async def read_batch_async(self, conn):
         """
