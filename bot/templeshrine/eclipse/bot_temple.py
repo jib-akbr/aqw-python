@@ -4,7 +4,7 @@ from bot.templeshrine.eclipse.core.core_eclipse import EclipseMasterBot, Eclipse
 from core.bot import Bot
 from colorama import Fore
 
-from core.commands import Command
+from core.command import Command
 
 # Requirement:
 # a lot of "Scroll of Enrage", minimal 50

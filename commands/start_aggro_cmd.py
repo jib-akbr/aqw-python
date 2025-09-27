@@ -5,7 +5,7 @@ from colorama import Fore
 
 class StartAggroCmd(BaseCommand):
     
-    def __init__(self, mon_ids: []):
+    def __init__(self, mon_ids: []): # type: ignore
         self.mon_ids = mon_ids
     
     async def execute(self, bot: Bot, cmd: Command):

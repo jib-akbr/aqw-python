@@ -13,7 +13,7 @@ def accept_quest_bulk(quest_id: int, increament: int):
         cmds.append(cmd.AcceptQuestCmd(quest_id + i))
     return cmds
 
-def un_bank_items(items: []):
+def un_bank_items(items: []): # type: ignore
     cmds = []
     for item in items:
         cmds.append(cmd.IsInBankCmd(item)),

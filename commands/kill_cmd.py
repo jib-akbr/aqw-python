@@ -5,7 +5,7 @@ from commands import UseSkillCmd
 
 class KillCmd(BaseCommand):
     
-    def __init__(self, monsterName: []):
+    def __init__(self, monsterName: []): # type: ignore
         self.monsterName = monsterName
     
     async def execute(self, bot: Bot, cmd: Command):
